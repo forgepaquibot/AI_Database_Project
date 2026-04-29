@@ -1,0 +1,108 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title PDF Resources
+    link(rel="stylesheet" href="/resources_style.css")
+
+  body
+    .container
+      h1 PDF Resource Hub
+
+      // ✅ Button to go back to index (login/signup)
+      a.button(href="/") Back to Login/Signup
+
+      if message
+        p.message= message
+
+    .section
+      h2 Upload PDF
+      form(action="/upload" method="POST" enctype="multipart/form-data")
+        // PDF info
+        input(type="text" name="title" placeholder="Title" required)
+        input(type="text" name="description" placeholder="Description")
+        input(type="number" name="pages" placeholder="Number of pages" required)
+        input(type="file" name="pdf" accept="application/pdf" required)
+
+        // Author selection
+        label(for="author_id") Author
+        select(name="author_id")
+          option(value="") --Select existing author--
+          if authors
+            each author in authors
+              option(value=author.author_id)= author.author_name
+        input(type="text" name="author_name" placeholder="Or enter new author")
+
+        // Subject selection
+        label(for="subject_id") Subject
+        select(name="subject_id")
+          option(value="") --Select existing subject--
+          if subjects
+            each subject in subjects
+              option(value=subject.subject_id)= subject.subject_name
+        input(type="text" name="subject_name" placeholder="Or enter new subject")
+
+        // Source selection
+        label(for="source_id") Source
+        select(name="source_id")
+          option(value="") --Select existing source--
+          if sources
+            each source in sources
+              option(value=source.source_id)= source.source_name
+        input(type="text" name="source_name" placeholder="Or enter new source")
+        input(type="url" name="source_url" placeholder="Source URL (required if new)")
+
+        button(type="submit") Upload
+
+    .section
+      h2 Search PDFs
+      form(action="/search" method="GET")
+        input(type="text" name="query" placeholder="Search by title..." value=query)
+
+        // Filter by author
+        select(name="author_id")
+          option(value="") --All authors--
+          if authors
+            each author in authors
+              option(
+                value=author.author_id
+                selected=(author.author_id == selectedAuthor)
+              )= author.author_name
+
+        // Filter by subject
+        select(name="subject_id")
+          option(value="") --All subjects--
+          if subjects
+            each subject in subjects
+              option(
+                value=subject.subject_id
+                selected=(subject.subject_id == selectedSubject)
+              )= subject.subject_name
+
+        button(type="submit") Search
+        a.button(href="/ai_model") Go to AI Models
+
+    if results && results.length
+      .results
+        h2 Results
+        each resource in results
+          .card
+            h3= resource.title
+            p= resource.description
+            p Pages: #{resource.pages}
+            p Author: #{resource.author_name || "N/A"}
+            p Subject: #{resource.subject_name || "N/A"}
+            p Source: 
+              if resource.source_url
+                a(href=resource.source_url target="_blank")= resource.source_name
+              else
+                | #{resource.source_name || "N/A"}
+            p Uploaded by: #{resource.uploader || "Unknown"}
+            p Date added: #{resource.date_added || "Unknown"}
+            a(href=resource.file_path target="_blank") View PDF
+    else
+      if results
+        p No results found.
+
+    script(src="/resources.js")

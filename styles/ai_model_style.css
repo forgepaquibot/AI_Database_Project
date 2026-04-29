@@ -1,0 +1,93 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #eef2f7;
+}
+
+.container {
+  width: 80%;
+  margin: auto;
+  padding: 30px;
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.nav-buttons {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 0 5px 10px 5px;
+  background: #007BFF; /* same as submit buttons */
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.nav-btn:hover {
+  background: #0056b3;
+}
+
+.section {
+  background: white;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+input, button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #218838;
+}
+
+.results {
+  margin-top: 20px;
+}
+
+.card {
+  background: #d9eaff; /* slightly different from PDF cards */
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.card a {
+  color: #007BFF;
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
+}
+
+.message {
+  color: red;
+  text-align: center;
+  margin-bottom: 15px;
+}

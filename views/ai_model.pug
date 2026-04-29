@@ -1,0 +1,51 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title AI Model Hub
+    link(rel="stylesheet" href="/ai_model_style.css")
+
+  body
+    .container
+      h1 AI Model Hub
+
+      // Navigation buttons
+      .nav-buttons
+        a.nav-btn(href="/resources") PDF Uploads
+        a.nav-btn(href="/") Back to Login/Sign Up
+
+      if message
+        p.message= message
+
+      // Upload AI Model
+      .section
+        h2 Upload AI Model
+        form(action="/upload_model" method="POST" enctype="multipart/form-data")
+          input(type="text" name="name" placeholder="Model Name" required)
+          input(type="text" name="description" placeholder="Description")
+          input(type="file" name="model_file" accept=".pt,.bin" required)
+          button(type="submit") Upload Model
+
+      // Search AI Models
+      .section
+        h2 Search AI Models
+        form(action="/search_models" method="GET")
+          input(type="text" name="query" placeholder="Search by name..." value=query)
+          button(type="submit") Search
+
+      // Models List
+      if models && models.length
+        .results
+          h2 Models
+          each model in models
+            .card
+              h3= model.name
+              p= model.description
+              p Date created: #{model.date_created}
+              a(href=model.model_path target="_blank") Download
+      else
+        if models
+          p No models found.
+
+    script(src="/ai_model.js")

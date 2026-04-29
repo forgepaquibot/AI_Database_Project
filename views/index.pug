@@ -1,0 +1,31 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Login / Signup
+    link(rel="stylesheet" href="/indexstyle.css")
+
+  body
+    .container
+      h1 Welcome To The Database!
+
+      if message
+        p.message= message
+
+      .form-container
+        .form-box
+          h2 Login
+          form(action="/login" method="POST")
+            input(type="text" name="username" placeholder="Username" required)
+            input(type="password" name="password" placeholder="Password" required)
+            button(type="submit") Login
+
+        .form-box
+          h2 Sign Up
+          form(action="/signup" method="POST")
+            input(type="text" name="username" placeholder="Username" required)
+            input(type="password" name="password" placeholder="Password" required)
+            button(type="submit") Sign Up
+    
+    script(src="/index.js")

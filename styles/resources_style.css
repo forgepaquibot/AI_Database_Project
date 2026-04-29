@@ -1,0 +1,121 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #eef2f7;
+}
+
+.container {
+  width: 80%;
+  margin: auto;
+  padding: 30px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.section {
+  background: white;
+  padding: 20px;
+  margin-bottom: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+input {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 10px;
+  width: 100%;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #218838;
+}
+
+.results {
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.card a {
+  color: #007BFF;
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
+}
+
+.message {
+  color: red;
+  text-align: center;
+}
+
+/* --- Select dropdowns --- */
+select {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+/* --- Labels --- */
+label {
+  font-weight: bold;
+  margin-top: 10px;
+  display: block;
+}
+
+/* --- AI button link styled like button --- */
+a.button {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: #007BFF;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+a.button:hover {
+  background: #0056b3;
+}
+
+/* --- Better card spacing --- */
+.card p {
+  margin: 5px 0;
+}
+
+/* --- Optional: nicer section spacing --- */
+.section h2 {
+  margin-top: 0;
+}
+
+.results h2 {
+  margin-left: 20px;
+}
