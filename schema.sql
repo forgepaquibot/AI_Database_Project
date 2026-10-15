@@ -45,12 +45,32 @@ CREATE TABLE IF NOT EXISTS ai_llms (
     ai_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
+
+    -- Retained for compatibility with the original schema.
+    -- Ollama records use an identifier such as ollama://llama3.2:latest.
     model_path TEXT NOT NULL,
-    date_created TEXT NOT NULL,
-    is_public BOOLEAN,
+
+    date_created TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_public INTEGER NOT NULL DEFAULT 0
+        CHECK (is_public IN (0, 1)),
+
     user_id INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
+
+    -- Model provider and Ollama metadata.
+    provider TEXT NOT NULL DEFAULT 'file',
+    model_ref TEXT,
+    model_format TEXT,
+    model_digest TEXT,
+    artifact_path TEXT,
+
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
 );
+
+-- Prevent a user from registering the same provider/model reference twice.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_llms_owner_provider_ref
+ON ai_llms(user_id, provider, model_ref)
+WHERE model_ref IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS resource_authors (
     resource_id INTEGER NOT NULL,

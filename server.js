@@ -6,6 +6,9 @@ const fs = require("fs");
 const session = require("express-session");
 
 const app = express();
+const { PDFParse } = require("pdf-parse");
+const OLLAMA_BASE_URL =
+    process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 
 // -------------------- Setup --------------------
 ["uploads/resources", "uploads/models"].forEach(dir => {
@@ -17,7 +20,6 @@ app.use(express.json());
 app.use(express.static("client"));
 app.use(express.static("styles"));
 app.use("/uploads/resources", express.static("uploads/resources"));
-app.use("/uploads/models", express.static("uploads/models"));
 
 app.set("view engine", "pug");
 
@@ -43,18 +45,53 @@ const uploadPDF = multer({
   fileFilter: (req, file, cb) => cb(null, file.mimetype === "application/pdf")
 });
 
-const uploadModel = multer({
-  storage: multer.diskStorage({
-    destination: "uploads/models",
-    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
-  }),
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, ext === ".pt" || ext === ".bin");
-  }
-});
-
 // -------------------- Helpers --------------------
+function sqlGet(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) return reject(err);
+            resolve(row);
+        });
+    });
+}
+
+function sqlAll(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+}
+
+function sqlRun(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function (err) {
+            if (err) return reject(err);
+
+            resolve({
+                lastID: this.lastID,
+                changes: this.changes
+            });
+        });
+    });
+}
+
+async function getOllamaModels() {
+    const response = await fetch(
+        `${OLLAMA_BASE_URL}/api/tags`
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            `Ollama returned HTTP ${response.status}`
+        );
+    }
+
+    const data = await response.json();
+    return data.models || [];
+}
+
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect("/");
   next();
@@ -297,34 +334,369 @@ app.get("/search", requireLogin, (req, res) => {
 });
 
 // -------------------- AI Models --------------------
-app.get("/ai_model", requireLogin, (req, res) => {
-  const msg = req.session.message;
-  req.session.message = null; // clear after showing
+app.get("/ai_model", requireLogin, async (req, res) => {
+    const userId = req.session.user.id;
 
-  db.all("SELECT * FROM ai_llms", [], (err, models = []) => {
-    res.render("ai_model", { models, message: msg });
-  });
+    let message = req.session.message;
+    req.session.message = null;
+
+    let ollamaModels = [];
+
+    try {
+        ollamaModels = await getOllamaModels();
+    } catch (err) {
+        console.error("Ollama connection error:", err.message);
+
+        message = message ||
+            "Could not connect to Ollama. Check that Ollama is running.";
+    }
+
+    try {
+        const models = await sqlAll(
+            `SELECT *
+             FROM ai_llms
+             WHERE user_id = ?
+             ORDER BY ai_id DESC`,
+            [userId]
+        );
+
+        const resources = await sqlAll(
+            `SELECT resource_id, title
+             FROM pdf_resources
+             WHERE user_id = ? OR is_public = 1
+             ORDER BY resource_id DESC`,
+            [userId]
+        );
+
+        const jobs = await sqlAll(
+            `SELECT
+                tj.*,
+                ai.name AS model_name,
+                pr.title AS resource_title
+            FROM training_jobs tj
+            JOIN ai_llms ai ON ai.ai_id = tj.ai_id
+            JOIN pdf_resources pr ON pr.resource_id = tj.resource_id
+            WHERE ai.user_id = ?
+            ORDER BY tj.job_id DESC
+            LIMIT 20`,
+            [userId]
+        );
+
+        res.render("ai_model", {
+            models,
+            ollamaModels,
+            resources,
+            jobs,
+            message
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Could not load AI models.");
+    }
 });
 
-app.post("/upload_model", requireLogin, uploadModel.single("model_file"), (req, res) => {
-  if (!req.file) {
-    req.session.message = "Invalid file. Only .pt or .bin allowed.";
-    return res.redirect("/ai_model");
-  }
+app.post("/register_ollama_model", requireLogin, async (req, res) => {
+    const userId = req.session.user.id;
 
-  const userId = req.session.user.id;
-  const { name, description } = req.body;
-  const filePath = "/uploads/models/" + req.file.filename;
+    const modelRef = String(req.body.model_ref || "").trim();
+    const name = String(req.body.name || modelRef).trim();
+    const description = String(req.body.description || "").trim();
 
-  db.run(
-    `INSERT INTO ai_llms (name, description, model_path, date_created, is_public, user_id)
-     VALUES (?, ?, ?, datetime('now'), 1, ?)`,
-    [name, description, filePath, userId],
-    (err) => {
-      req.session.message = err ? "Model upload failed." : "Model uploaded successfully!";
-      res.redirect("/ai_model");
+    if (!modelRef || !name) {
+        req.session.message = "Choose a model and provide a name.";
+        return res.redirect("/ai_model");
     }
-  );
+
+    try {
+        const installedModels = await getOllamaModels();
+
+        const found = installedModels.find(
+            item => (item.name || item.model) === modelRef
+        );
+
+        if (!found) {
+            throw new Error(
+                "That model is not installed in Ollama. Pull it first."
+            );
+        }
+
+        await sqlRun(
+            `INSERT INTO ai_llms
+                (name, description, model_path, date_created,
+                 is_public, user_id, provider, model_ref,
+                 model_format, model_digest)
+             VALUES (?, ?, ?, datetime('now'),
+                     0, ?, 'ollama', ?, ?, ?)`,
+            [
+                name,
+                description,
+                `ollama://${modelRef}`,
+                userId,
+                modelRef,
+                found.details?.format || null,
+                found.digest || null
+            ]
+        );
+
+        req.session.message = "Ollama model registered successfully!";
+    } catch (err) {
+        console.error("Model registration error:", err.message);
+
+        req.session.message = err.message.includes("UNIQUE")
+            ? "You have already registered that Ollama model."
+            : err.message === "That model is not installed in Ollama. Pull it first."
+                ? err.message
+                : "Model registration failed. Check your database and Ollama.";
+    }
+
+    res.redirect("/ai_model");
+});
+
+
+app.post("/evaluate_model", requireLogin, async (req, res) => {
+    const userId = req.session.user.id;
+
+    const aiId = Number(req.body.ai_id);
+    const resourceId = Number(req.body.resource_id);
+
+    const threshold = 0.80;
+    let jobId = null;
+
+    try {
+        if (
+            !Number.isInteger(aiId) ||
+            !Number.isInteger(resourceId) ||
+            aiId <= 0 ||
+            resourceId <= 0
+        ) {
+            throw new Error("Select a valid model and PDF.");
+        }
+
+        // Verify that the model belongs to the logged-in user.
+        const model = await sqlGet(
+            `SELECT *
+             FROM ai_llms
+             WHERE ai_id = ?
+               AND user_id = ?
+               AND provider = 'ollama'`,
+            [aiId, userId]
+        );
+
+        if (!model) {
+            throw new Error("Ollama model not found.");
+        }
+
+        // Verify that the PDF is accessible to the user.
+        const resource = await sqlGet(
+            `SELECT *
+             FROM pdf_resources
+             WHERE resource_id = ?
+               AND (user_id = ? OR is_public = 1)`,
+            [resourceId, userId]
+        );
+
+        if (!resource) {
+            throw new Error("PDF not found or access denied.");
+        }
+
+        // Load the benchmark questions associated with this PDF.
+        const cases = await sqlAll(
+            `SELECT *
+             FROM evaluation_cases
+             WHERE resource_id = ?
+             ORDER BY case_id`,
+            [resourceId]
+        );
+
+        if (cases.length === 0) {
+            throw new Error(
+                "No evaluation questions exist for this PDF."
+            );
+        }
+
+        if (
+            cases.some(
+                test =>
+                    !test.prompt?.trim() ||
+                    !test.expected_phrase?.trim()
+            )
+        ) {
+            throw new Error(
+                "Every evaluation question needs a prompt and expected phrase."
+            );
+        }
+
+        // Create a job record.
+        const createdJob = await sqlRun(
+            `INSERT INTO training_jobs
+                (ai_id, resource_id, job_type, status, threshold)
+             VALUES (?, ?, 'evaluation', 'pending', ?)`,
+            [aiId, resourceId, threshold]
+        );
+
+        jobId = createdJob.lastID;
+
+        await sqlRun(
+            `UPDATE training_jobs
+             SET status = 'running',
+                 started_at = CURRENT_TIMESTAMP
+             WHERE job_id = ?`,
+            [jobId]
+        );
+
+        // Resolve the stored PDF path safely.
+        const relativePath = String(resource.file_path)
+            .replace(/^[/\\]+/, "");
+
+        const filePath = path.resolve(__dirname, relativePath);
+
+        const resourceRoot =
+            path.resolve(__dirname, "uploads/resources") + path.sep;
+
+        if (!filePath.startsWith(resourceRoot)) {
+            throw new Error("Invalid PDF storage path.");
+        }
+
+        if (!fs.existsSync(filePath)) {
+            throw new Error("The PDF file was not found on disk.");
+        }
+
+        // Extract text from the PDF.
+        const parser = new PDFParse({
+            data: fs.readFileSync(filePath)
+        });
+
+        let extracted;
+
+        try {
+            extracted = await parser.getText();
+        } finally {
+            await parser.destroy();
+        }
+
+        // Prototype limit: the first 12,000 characters only.
+        const documentText = String(extracted.text || "")
+            .trim()
+            .slice(0, 12000);
+
+        if (!documentText) {
+            throw new Error(
+                "No selectable text was extracted from this PDF."
+            );
+        }
+
+        let passed = 0;
+
+        // Test the model with every benchmark question.
+        for (const test of cases) {
+            const response = await fetch(
+                `${OLLAMA_BASE_URL}/api/chat`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: model.model_ref,
+                        stream: false,
+                        options: {
+                            temperature: 0
+                        },
+                        messages: [
+                            {
+                                role: "system",
+                                content:
+                                    "Answer using only the supplied PDF context. " +
+                                    "If the answer is not supported by the context, " +
+                                    "say that you cannot determine it from the PDF."
+                            },
+                            {
+                                role: "user",
+                                content:
+                                    `PDF CONTEXT:\n${documentText}\n\n` +
+                                    `QUESTION:\n${test.prompt}`
+                            }
+                        ]
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `Ollama returned HTTP ${response.status}.`
+                );
+            }
+
+            const result = await response.json();
+
+            const answer = String(
+                result.message?.content || ""
+            ).toLowerCase();
+
+            const expected =
+                test.expected_phrase.trim().toLowerCase();
+
+            if (answer.includes(expected)) {
+                passed++;
+            }
+        }
+
+        const total = cases.length;
+        const score = passed / total;
+        const status = score >= threshold ? "done" : "failed";
+
+        // Save the score and final job status.
+        await sqlRun(
+            `UPDATE training_jobs
+             SET passed_tests = ?,
+                 total_tests = ?,
+                 score = ?,
+                 status = ?,
+                 error_message = ?,
+                 completed_at = CURRENT_TIMESTAMP
+             WHERE job_id = ?`,
+            [
+                passed,
+                total,
+                score,
+                status,
+                status === "failed"
+                    ? `Score ${(score * 100).toFixed(1)}% was below the ` +
+                      `${(threshold * 100).toFixed(1)}% threshold.`
+                    : null,
+                jobId
+            ]
+        );
+
+        req.session.message =
+            `Evaluation complete: ${passed}/${total} passed ` +
+            `(${(score * 100).toFixed(1)}%). Status: ${status}.`;
+
+    } catch (err) {
+        console.error("Evaluation error:", err);
+
+        if (jobId !== null) {
+            try {
+                await sqlRun(
+                    `UPDATE training_jobs
+                     SET status = 'failed',
+                         error_message = ?,
+                         completed_at = CURRENT_TIMESTAMP
+                     WHERE job_id = ?`,
+                    [String(err.message).slice(0, 800), jobId]
+                );
+            } catch (dbErr) {
+                console.error(
+                    "Could not update failed job:",
+                    dbErr
+                );
+            }
+        }
+
+        req.session.message = `Evaluation failed: ${err.message}`;
+    }
+
+    res.redirect("/ai_model");
 });
 
 // Host server

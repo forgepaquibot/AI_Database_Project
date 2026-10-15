@@ -13,6 +13,7 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "multer": "^2.1.1",
+    "pdf-parse": "^2.4.5",
     "pug": "^3.0.4",
     "sqlite3": "^6.0.1"
   }

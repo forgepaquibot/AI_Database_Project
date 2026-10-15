@@ -1,84 +1,193 @@
+
+/* -------------------- Base Layout -------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #eef2f7;
+  color: #263238;
+  line-height: 1.5;
 }
 
 .container {
   width: 80%;
+  max-width: 1200px;
   margin: auto;
-  padding: 30px;
+  padding: 30px 0;
 }
 
-h1, h2 {
+h1,
+h2 {
   text-align: center;
+  margin-top: 0;
   margin-bottom: 20px;
+  color: #26384a;
 }
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.4rem;
+}
+
+/* -------------------- Navigation -------------------- */
 
 .nav-buttons {
-  text-align: center;
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
 }
 
 .nav-btn {
   display: inline-block;
   padding: 10px 20px;
-  margin: 0 5px 10px 5px;
-  background: #007BFF; /* same as submit buttons */
+  background: #007bff;
   color: white;
   text-decoration: none;
   border-radius: 6px;
   font-weight: bold;
   border: none;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
 .nav-btn:hover {
   background: #0056b3;
 }
 
+/* -------------------- Sections -------------------- */
+
 .section {
   background: white;
-  padding: 20px;
+  padding: 25px;
   margin-bottom: 25px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
-input, button {
+.section > p {
+  color: #526171;
+}
+
+/* -------------------- Forms -------------------- */
+
+form {
+  width: 100%;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: #34495e;
+}
+
+input,
+select,
+textarea {
   display: block;
   width: 100%;
-  padding: 10px;
-  margin: 10px 0;
+  padding: 11px 12px;
+  margin: 8px 0 14px;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  background: #fff;
+  color: #263238;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+input[type="file"] {
+  padding: 9px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
 
 button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  margin: 12px 0 0;
+  border-radius: 6px;
+  border: none;
   background: #28a745;
   color: white;
-  border: none;
+  font-size: 1rem;
+  font-weight: bold;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
 button:hover {
   background: #218838;
 }
 
+button:focus-visible,
+.nav-btn:focus-visible {
+  outline: 3px solid #80bdff;
+  outline-offset: 2px;
+}
+
+/* -------------------- Messages -------------------- */
+
+.message {
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: #fff0f0;
+  color: #b42318;
+  text-align: center;
+  border: 1px solid #f5c2c7;
+  border-radius: 6px;
+}
+
+/* -------------------- Registered Models -------------------- */
+
 .results {
   margin-top: 20px;
 }
 
 .card {
-  background: #d9eaff; /* slightly different from PDF cards */
-  padding: 15px;
+  background: #d9eaff;
+  padding: 18px;
   margin-bottom: 15px;
   border-radius: 8px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  border: 1px solid #c3ddfb;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  overflow-wrap: anywhere;
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #164675;
+}
+
+.card p {
+  margin: 7px 0;
 }
 
 .card a {
-  color: #007BFF;
+  color: #007bff;
   text-decoration: none;
 }
 
@@ -86,8 +195,123 @@ button:hover {
   text-decoration: underline;
 }
 
-.message {
-  color: red;
-  text-align: center;
-  margin-bottom: 15px;
+/* -------------------- Evaluation History Table -------------------- */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  border-radius: 8px;
+  border: 1px solid #dce3eb;
+}
+
+table {
+  width: 100%;
+  min-width: 750px;
+  border-collapse: collapse;
+  background: white;
+}
+
+thead {
+  background: #e3edfa;
+}
+
+th,
+td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+th {
+  color: #34495e;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+tbody tr:hover {
+  background: #f6f9fd;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* -------------------- Job Status Labels -------------------- */
+
+.status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-pending {
+  color: #805b00;
+  background: #fff1c2;
+}
+
+.status-running {
+  color: #0757a6;
+  background: #dcecff;
+}
+
+.status-done {
+  color: #176b35;
+  background: #d8f3df;
+}
+
+.status-failed {
+  color: #a61b1b;
+  background: #ffe0e0;
+}
+
+/* -------------------- Responsive Layout -------------------- */
+
+@media (max-width: 900px) {
+  .container {
+    width: 92%;
+  }
+
+  .section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    width: 94%;
+    padding: 18px 0;
+  }
+
+  h1 {
+    font-size: 1.65rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  .section {
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+  }
+
+  .nav-btn {
+    text-align: center;
+    margin: 0;
+  }
+
+  th,
+  td {
+    padding: 10px;
+  }
 }

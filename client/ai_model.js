@@ -1,33 +1,74 @@
+
 document.addEventListener("DOMContentLoaded", () => {
-  const uploadForm = document.querySelector('form[action="/upload_model"]');
-  const searchForm = document.querySelector('form[action="/search_models"]');
-  const searchInput = searchForm?.querySelector('input[name="query"]');
+    const registerForm = document.querySelector(
+        'form[action="/register_ollama_model"]'
+    );
 
-  // Validate upload
-  uploadForm?.addEventListener("submit", (e) => {
-    const name = uploadForm.name.value.trim();
-    const file = uploadForm.model_file.files[0];
+    const evaluateForm = document.querySelector(
+        'form[action="/evaluate_model"]'
+    );
 
-    if (!name || !file) {
-      e.preventDefault();
-      alert("Please provide a name and select a model file (.pt or .bin).");
-      return;
-    }
+    // -------------------- Register Ollama Model --------------------
 
-    const allowedExtensions = /(\.pt|\.bin)$/i;
-    if (!allowedExtensions.exec(file.name)) {
-      e.preventDefault();
-      alert("Only .pt or .bin model files are allowed.");
-    }
-  });
+    registerForm?.addEventListener("submit", (event) => {
+        const modelRef = registerForm
+            .querySelector('[name="model_ref"]')
+            ?.value.trim();
 
-  // Suport entering for searching
-  if (searchInput && searchForm) {
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        searchForm.submit();
-      }
+        const name = registerForm
+            .querySelector('[name="name"]')
+            ?.value.trim();
+
+        if (!modelRef) {
+            event.preventDefault();
+            alert("Please select an installed Ollama model.");
+            return;
+        }
+
+        // The name is optional in the backend, but reject
+        // excessively long names if one was provided.
+        if (name && name.length > 150) {
+            event.preventDefault();
+            alert("The model name must be 150 characters or fewer.");
+            return;
+        }
+
+        // Prevent accidental double submissions.
+        const submitButton = registerForm.querySelector(
+            'button[type="submit"], button:not([type])'
+        );
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Registering Model...";
+        }
     });
-  }
+
+    // -------------------- Evaluate Model --------------------
+
+    evaluateForm?.addEventListener("submit", (event) => {
+        const modelId = evaluateForm
+            .querySelector('[name="ai_id"]')
+            ?.value;
+
+        const resourceId = evaluateForm
+            .querySelector('[name="resource_id"]')
+            ?.value;
+
+        if (!modelId || !resourceId) {
+            event.preventDefault();
+            alert("Please select both a model and a PDF resource.");
+            return;
+        }
+
+        // Evaluation can take time while Ollama generates answers.
+        const submitButton = evaluateForm.querySelector(
+            'button[type="submit"], button:not([type])'
+        );
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Evaluation Running...";
+        }
+    });
 });

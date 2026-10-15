@@ -1,3 +1,4 @@
+
 doctype html
 html(lang="en")
   head
@@ -7,45 +8,133 @@ html(lang="en")
     link(rel="stylesheet" href="/ai_model_style.css")
 
   body
+    // Defaults prevent errors before all backend routes are updated.
+    - const installedModels = typeof ollamaModels !== 'undefined' && ollamaModels ? ollamaModels : []
+    - const registeredModels = typeof models !== 'undefined' && models ? models : []
+    - const ollamaRegisteredModels = registeredModels.filter(model => model.provider === 'ollama')
+    - const resourceList = typeof resources !== 'undefined' && resources ? resources : []
+    - const jobList = typeof jobs !== 'undefined' && jobs ? jobs : []
+    - const pageMessage = typeof message !== 'undefined' ? message : null
+
     .container
       h1 AI Model Hub
 
-      // Navigation buttons
+      // Navigation
       .nav-buttons
         a.nav-btn(href="/resources") PDF Uploads
         a.nav-btn(href="/") Back to Login/Sign Up
 
-      if message
-        p.message= message
+      if pageMessage
+        p.message= pageMessage
 
-      // Upload AI Model
+      // Register an existing Ollama model
       .section
-        h2 Upload AI Model
-        form(action="/upload_model" method="POST" enctype="multipart/form-data")
-          input(type="text" name="name" placeholder="Model Name" required)
-          input(type="text" name="description" placeholder="Description")
-          input(type="file" name="model_file" accept=".pt,.bin" required)
-          button(type="submit") Upload Model
+        h2 Register Ollama Model
 
-      // Search AI Models
+        p Select a model already installed and available through Ollama.
+        p You do not need to upload its weight file again.
+
+        if installedModels.length
+          form(action="/register_ollama_model" method="POST")
+            label(for="model_ref") Installed Ollama model
+            select#model_ref(name="model_ref" required)
+              each item in installedModels
+                option(value=item.name)= item.name
+
+            label(for="name") Display name
+            input#name(
+              type="text"
+              name="name"
+              placeholder="e.g. Llama 3.2"
+            )
+
+            label(for="description") Description
+            textarea#description(
+              name="description"
+              placeholder="Optional model description"
+            )
+
+            button(type="submit") Register Model
+        else
+          p No Ollama models found. Start Ollama and install a model first.
+
+      // Evaluate a model against a PDF
       .section
-        h2 Search AI Models
-        form(action="/search_models" method="GET")
-          input(type="text" name="query" placeholder="Search by name..." value=query)
-          button(type="submit") Search
+        h2 Evaluate Model Against PDF
 
-      // Models List
-      if models && models.length
-        .results
-          h2 Models
-          each model in models
-            .card
-              h3= model.name
-              p= model.description
-              p Date created: #{model.date_created}
-              a(href=model.model_path target="_blank") Download
-      else
-        if models
-          p No models found.
+        p Run a benchmark using questions and expected answers
+          |  associated with an uploaded PDF.
+
+        if ollamaRegisteredModels.length && resourceList.length
+          form(action="/evaluate_model" method="POST")
+            label(for="ai_id") AI Model
+            select#ai_id(name="ai_id" required)
+              each model in ollamaRegisteredModels
+                option(value=model.ai_id)= model.name + " (" + model.model_ref + ")"
+
+            label(for="resource_id") PDF Resource
+            select#resource_id(name="resource_id" required)
+              each resource in resourceList
+                option(value=resource.resource_id)= resource.title
+
+            button(type="submit") Run Evaluation
+        else
+          p Register an Ollama model and upload or select an accessible PDF first.
+
+      // Recent evaluation jobs
+      .section
+        h2 Evaluation History
+
+        if jobList.length
+          .table-wrapper
+            table
+              thead
+                tr
+                  th Job ID
+                  th Model
+                  th PDF
+                  th Score
+                  th Threshold
+                  th Status
+                  th Completed
+              tbody
+                each job in jobList
+                  tr
+                    td= job.job_id
+                    td= job.model_name
+                    td= job.resource_title
+                    td= job.score == null ? "Not scored" : (job.score * 100).toFixed(1) + "%"
+                    td= (job.threshold * 100).toFixed(1) + "%"
+                    td
+                      span(class="status status-" + job.status)= job.status
+                    td= job.completed_at || "Not completed"
+        else
+          p No evaluation jobs have been run yet.
+
+      // Registered models
+      .section
+        h2 Registered Models
+
+        if registeredModels.length
+          .results
+            each model in registeredModels
+              .card
+                h3= model.name
+
+                if model.description
+                  p= model.description
+
+                p Provider: #{model.provider || "legacy file upload"}
+                p Date created: #{model.date_created}
+
+                if model.provider === "ollama"
+                  p Ollama model: #{model.model_ref}
+                  if model.model_digest
+                    p Model digest: #{model.model_digest}
+                else
+                  p Legacy model path: #{model.model_path}
+
+        else
+          p No models have been registered yet.
 
     script(src="/ai_model.js")
