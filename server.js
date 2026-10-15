@@ -17,7 +17,7 @@ const OLLAMA_BASE_URL = (
 ).replace(/\/$/, "");
 
 const EMBEDDING_MODEL =
-    process.env.OLLAMA_EMBEDDING_MODEL || "nomic-embed-text";
+    process.env.OLLAMA_EMBEDDING_MODEL || "qwen3-embedding:0.6b";
 
 const DB_PATH = path.resolve(
     __dirname,
@@ -223,6 +223,85 @@ async function getOllamaModels() {
     return data.models || [];
 }
 
+let embeddingModelReady = false;
+let embeddingModelSetupPromise = null;
+
+async function ensureEmbeddingModel() {
+    if (embeddingModelReady) return;
+
+    // Avoid multiple simultaneous downloads if several users
+    // begin processing resources at the same time.
+    if (!embeddingModelSetupPromise) {
+        embeddingModelSetupPromise = (async () => {
+            let models = await getOllamaModels();
+
+            const isInstalled = () => models.some(
+                item =>
+                    (item.name || item.model) === EMBEDDING_MODEL
+            );
+
+            if (!isInstalled()) {
+                console.log(
+                    `Installing app-managed embedding model: ${EMBEDDING_MODEL}`
+                );
+
+                const response = await fetch(
+                    `${OLLAMA_BASE_URL}/api/pull`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            model: EMBEDDING_MODEL,
+                            stream: false
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const details = await response.text();
+
+                    throw new Error(
+                        `Could not install embedding model: ` +
+                        `HTTP ${response.status}. ${details}`
+                    );
+                }
+
+                const result = await response.json();
+
+                if (result.status !== "success") {
+                    throw new Error(
+                        `Embedding model installation did not complete: ` +
+                        `${result.status || "unknown status"}`
+                    );
+                }
+
+                // Verify the model is now available.
+                models = await getOllamaModels();
+
+                if (!isInstalled()) {
+                    throw new Error(
+                        "Embedding model installation could not be verified."
+                    );
+                }
+
+                console.log(
+                    `Embedding model ready: ${EMBEDDING_MODEL}`
+                );
+            }
+
+            embeddingModelReady = true;
+        })();
+    }
+
+    try {
+        await embeddingModelSetupPromise;
+    } finally {
+        embeddingModelSetupPromise = null;
+    }
+}
+
 async function getAccessibleModel(aiId, userId) {
     return sqlGet(
         `SELECT ai.*, u.username AS owner_username
@@ -332,6 +411,8 @@ function isNumericVector(value) {
 
 async function getEmbeddings(texts) {
     if (!texts.length) return [];
+
+    await ensureEmbeddingModel();
 
     const response = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
         method: "POST",
@@ -1129,7 +1210,11 @@ app.get("/ai_model", requireLogin, async (req, res) => {
     let ollamaModels = [];
 
     try {
-        ollamaModels = await getOllamaModels();
+        const installedModels = await getOllamaModels();
+
+        ollamaModels = installedModels.filter(
+            model => (model.name || model.model) !== EMBEDDING_MODEL
+        );
     } catch (err) {
         console.error("Ollama connection error:", err.message);
 
@@ -1207,6 +1292,13 @@ app.post("/register_ollama_model", requireLogin, async (req, res) => {
     if (!modelRef || !name) {
         req.session.message =
             "Choose an installed model and provide a name.";
+
+        return res.redirect("/ai_model");
+    }
+
+    if (modelRef === EMBEDDING_MODEL) {
+        req.session.message =
+            "The system embedding model cannot be registered as a chat model.";
 
         return res.redirect("/ai_model");
     }

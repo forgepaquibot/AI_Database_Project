@@ -1,5 +1,48 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Support both upload routes in the generalized server.
+    // -------------------- Preserve Scroll Position --------------------
+
+    const scrollStorageKey = "resourcesScrollPosition";
+
+    function saveScrollPosition() {
+        sessionStorage.setItem(
+            scrollStorageKey,
+            JSON.stringify({
+                x: window.scrollX,
+                y: window.scrollY
+            })
+        );
+    }
+
+    // Prevent the browser from overriding our saved position.
+    if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+    }
+
+    // Restore the saved position after the server redirects back.
+    const savedPosition = sessionStorage.getItem(scrollStorageKey);
+
+    if (savedPosition !== null) {
+        sessionStorage.removeItem(scrollStorageKey);
+
+        try {
+            const position = JSON.parse(savedPosition);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        left: position.x || 0,
+                        top: position.y || 0,
+                        behavior: "auto"
+                    });
+                });
+            });
+        } catch (error) {
+            console.error("Could not restore scroll position:", error);
+        }
+    }
+
+    // -------------------- Resource Upload --------------------
+
     const uploadForm = document.querySelector(
         'form[action="/upload"], form[action="/upload_resource"]'
     );
@@ -15,8 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const maxFileSize = 50 * 1024 * 1024; // 50 MB
 
-    // -------------------- Resource Upload --------------------
-
     if (uploadForm) {
         const fileInput = uploadForm.querySelector(
             '[name="pdf"], [name="resource_file"]'
@@ -25,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const authorSelect = uploadForm.querySelector(
             '[name="author_id"]'
         );
+
         const authorInput = uploadForm.querySelector(
             '[name="author_name"]'
         );
@@ -32,6 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const subjectSelect = uploadForm.querySelector(
             '[name="subject_id"]'
         );
+
         const subjectInput = uploadForm.querySelector(
             '[name="subject_name"]'
         );
@@ -39,9 +82,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const sourceSelect = uploadForm.querySelector(
             '[name="source_id"]'
         );
+
         const sourceName = uploadForm.querySelector(
             '[name="source_name"]'
         );
+
         const sourceUrl = uploadForm.querySelector(
             '[name="source_url"]'
         );
@@ -111,9 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Author and subject are optional in the generalized
-            // backend, but partially entered source information
-            // should be completed.
+            // Author and subject are optional.
             if (authorInput && authorSelect) {
                 if (
                     authorSelect.value &&
@@ -132,6 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
+            // Source metadata is optional, but if one field is
+            // supplied, require the other field as well.
             if (sourceSelect?.value) {
                 if (sourceName) sourceName.value = "";
                 if (sourceUrl) sourceUrl.value = "";
@@ -139,8 +184,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const name = sourceName?.value.trim() || "";
                 const url = sourceUrl?.value.trim() || "";
 
-                // Source metadata is optional. If one part is
-                // supplied, require the other part as well.
                 if ((name && !url) || (!name && url)) {
                     event.preventDefault();
                     alert(
@@ -160,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
+            // Save the scroll position only after all validation passes.
+            saveScrollPosition();
+
             const submitButton = uploadForm.querySelector(
                 'button[type="submit"], button:not([type])'
             );
@@ -177,21 +223,13 @@ document.addEventListener("DOMContentLoaded", () => {
         'form[action="/search"]'
     );
 
-    const searchInput = searchForm?.querySelector(
-        '[name="query"]'
-    );
-
-    // Normal HTML forms already submit when Enter is pressed.
-    // No custom Enter handler is necessary.
-
-    // -------------------- Scroll to Search Results --------------------
-
-    const resultsSection = document.querySelector(".results");
-
-    if (resultsSection) {
-        resultsSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
+    if (searchForm) {
+        // Handles clicking Search and pressing Enter.
+        searchForm.addEventListener("submit", () => {
+            saveScrollPosition();
         });
     }
+
+    // Do not call resultsSection.scrollIntoView() here.
+    // That would override the position restored after navigation.
 });

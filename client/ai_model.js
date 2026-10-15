@@ -1,4 +1,51 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // -------------------- Preserve Scroll Position --------------------
+
+    const scrollStorageKey = "aiModelScrollPosition";
+
+    function saveScrollPosition() {
+        sessionStorage.setItem(
+            scrollStorageKey,
+            JSON.stringify({
+                x: window.scrollX,
+                y: window.scrollY
+            })
+        );
+    }
+
+    // Stop the browser from automatically restoring a different position.
+    if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+    }
+
+    // Restore the saved position after the server redirects back.
+    const savedPosition = sessionStorage.getItem(scrollStorageKey);
+
+    if (savedPosition !== null) {
+        sessionStorage.removeItem(scrollStorageKey);
+
+        try {
+            const position = JSON.parse(savedPosition);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        left: position.x || 0,
+                        top: position.y || 0,
+                        behavior: "auto"
+                    });
+                });
+            });
+        } catch (error) {
+            console.error(
+                "Could not restore scroll position:",
+                error
+            );
+        }
+    }
+
+    // -------------------- Form References --------------------
+
     const registerForm = document.querySelector(
         'form[action="/register_ollama_model"]'
     );
@@ -13,6 +60,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const chatForm = document.querySelector("#chat-form");
 
+    // -------------------- Shared Helpers --------------------
+
     function disableAfterSubmit(form, buttonSelector, label) {
         const button = form?.querySelector(buttonSelector);
 
@@ -22,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // -------------------- Register an Ollama model --------------------
+    // -------------------- Register an Ollama Model --------------------
 
     registerForm?.addEventListener("submit", event => {
         const modelRef = registerForm
@@ -35,11 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!modelRef || !name) {
             event.preventDefault();
+
             alert(
                 "Choose an installed Ollama model and enter a display name."
             );
+
             return;
         }
+
+        // Save position only after validation succeeds.
+        saveScrollPosition();
 
         disableAfterSubmit(
             registerForm,
@@ -48,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     });
 
-    // -------------------- Process a resource --------------------
+    // -------------------- Process a Resource --------------------
 
     processForm?.addEventListener("submit", event => {
         const aiId = processForm
@@ -61,9 +115,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!aiId || !resourceId) {
             event.preventDefault();
+
             alert("Select both a model and a resource.");
+
             return;
         }
+
+        saveScrollPosition();
 
         disableAfterSubmit(
             processForm,
@@ -72,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     });
 
-    // -------------------- Link a processed resource --------------------
+    // -------------------- Link a Processed Resource --------------------
 
     linkForm?.addEventListener("submit", event => {
         const aiId = linkForm
@@ -85,9 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!aiId || !resourceId) {
             event.preventDefault();
+
             alert("Select both a model and a ready resource.");
+
             return;
         }
+
+        saveScrollPosition();
 
         disableAfterSubmit(
             linkForm,
@@ -96,9 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     });
 
-    // -------------------- Chat with a model --------------------
+    // -------------------- Chat with a Model --------------------
 
     chatForm?.addEventListener("submit", async event => {
+        // Chat uses fetch(), so it does not reload the page.
         event.preventDefault();
 
         const aiId = chatForm
@@ -119,13 +182,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const sources = document.querySelector("#chat-sources");
 
         if (!aiId || !prompt) {
-            status.textContent =
-                "Select a model and enter a message.";
+            if (status) {
+                status.textContent =
+                    "Select a model and enter a message.";
+            }
+
+            return;
+        }
+
+        if (!button || !status || !output || !sources) {
+            console.error("One or more chat interface elements are missing.");
+
             return;
         }
 
         button.disabled = true;
         button.textContent = "Generating...";
+
         status.textContent = "Waiting for the model...";
         output.textContent = "";
         sources.replaceChildren();
@@ -167,18 +240,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
             for (const sourceTitle of (data.sources || [])) {
                 const item = document.createElement("li");
+
                 item.textContent = sourceTitle;
+
                 sources.appendChild(item);
             }
 
             if (!data.sources?.length) {
                 const item = document.createElement("li");
+
                 item.textContent =
                     "No indexed resource passages were used.";
+
                 sources.appendChild(item);
             }
-        } catch (err) {
-            status.textContent = `Error: ${err.message}`;
+        } catch (error) {
+            status.textContent = `Error: ${error.message}`;
         } finally {
             button.disabled = false;
             button.textContent = "Send Message";
