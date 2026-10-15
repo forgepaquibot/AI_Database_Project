@@ -1,73 +1,197 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const uploadForm = document.querySelector('form[action="/upload"]');
+    // Support both upload routes in the generalized server.
+    const uploadForm = document.querySelector(
+        'form[action="/upload"], form[action="/upload_resource"]'
+    );
 
-  if (uploadForm) {
-    // Get DOM elements
-    const authorSelect = uploadForm.querySelector('[name="author_id"]');
-    const authorInput = uploadForm.querySelector('[name="author_name"]');
+    const allowedExtensions = new Set([
+        ".pdf",
+        ".txt",
+        ".md",
+        ".csv",
+        ".json",
+        ".jsonl"
+    ]);
 
-    const subjectSelect = uploadForm.querySelector('[name="subject_id"]');
-    const subjectInput = uploadForm.querySelector('[name="subject_name"]');
+    const maxFileSize = 50 * 1024 * 1024; // 50 MB
 
-    const sourceSelect = uploadForm.querySelector('[name="source_id"]');
-    const sourceName = uploadForm.querySelector('[name="source_name"]');
-    const sourceUrl = uploadForm.querySelector('[name="source_url"]');
+    // -------------------- Resource Upload --------------------
 
-    // Empty inputs if selected dropdown
-    const clearIfSelected = (select, inputs) => {
-      select.addEventListener("change", () => {
-        if (select.value) inputs.forEach(i => i.value = "");
-      });
-    };
+    if (uploadForm) {
+        const fileInput = uploadForm.querySelector(
+            '[name="pdf"], [name="resource_file"]'
+        );
 
-    clearIfSelected(authorSelect, [authorInput]);
-    clearIfSelected(subjectSelect, [subjectInput]);
-    clearIfSelected(sourceSelect, [sourceName, sourceUrl]);
+        const authorSelect = uploadForm.querySelector(
+            '[name="author_id"]'
+        );
+        const authorInput = uploadForm.querySelector(
+            '[name="author_name"]'
+        );
 
-    uploadForm.addEventListener("submit", e => {
-      if (!authorSelect.value && !authorInput.value.trim()) {
-        alert("Author required");
-        return e.preventDefault();
-      }
+        const subjectSelect = uploadForm.querySelector(
+            '[name="subject_id"]'
+        );
+        const subjectInput = uploadForm.querySelector(
+            '[name="subject_name"]'
+        );
 
-      if (!subjectSelect.value && !subjectInput.value.trim()) {
-        alert("Subject required");
-        return e.preventDefault();
-      }
+        const sourceSelect = uploadForm.querySelector(
+            '[name="source_id"]'
+        );
+        const sourceName = uploadForm.querySelector(
+            '[name="source_name"]'
+        );
+        const sourceUrl = uploadForm.querySelector(
+            '[name="source_url"]'
+        );
 
-      if (!sourceSelect.value) {
-        const name = sourceName.value.trim();
-        const url = sourceUrl.value.trim();
+        // Clear manual fields when an existing option is selected.
+        function clearIfSelected(select, inputs) {
+            if (!select) return;
 
-        if (!name || !url) {
-          alert("Source name + URL required");
-          return e.preventDefault();
+            select.addEventListener("change", () => {
+                if (select.value) {
+                    inputs.forEach(input => {
+                        if (input) input.value = "";
+                    });
+                }
+            });
         }
 
-        if (!isValidUrl(url)) {
-          alert("Please enter a valid URL (must start with http:// or https://)");
-          return e.preventDefault();
+        clearIfSelected(authorSelect, [authorInput]);
+        clearIfSelected(subjectSelect, [subjectInput]);
+        clearIfSelected(sourceSelect, [sourceName, sourceUrl]);
+
+        function isValidUrl(value) {
+            try {
+                const url = new URL(value);
+
+                return (
+                    url.protocol === "http:" ||
+                    url.protocol === "https:"
+                );
+            } catch {
+                return false;
+            }
         }
-      }
-    });
-  }
 
-  // Support entering for searching
-  const searchForm = document.querySelector('form[action="/search"]');
-  const searchInput = searchForm?.querySelector('[name="query"]');
+        uploadForm.addEventListener("submit", event => {
+            // Validate the selected resource file.
+            const file = fileInput?.files?.[0];
 
-  if (searchInput && searchForm) {
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        searchForm.submit();
-      }
-    });
-  }
+            if (!file) {
+                event.preventDefault();
+                alert("Please select a resource file.");
+                return;
+            }
 
-  // Stay on results
-  const resultsSection = document.querySelector(".results");
-  if (resultsSection) {
-    resultsSection.scrollIntoView({ behavior: "smooth" });
-  }
+            const extension = file.name
+                .slice(file.name.lastIndexOf("."))
+                .toLowerCase();
+
+            if (!allowedExtensions.has(extension)) {
+                event.preventDefault();
+                alert(
+                    "Unsupported file type. Allowed formats: " +
+                    "PDF, TXT, MD, CSV, JSON and JSONL."
+                );
+                return;
+            }
+
+            if (file.size > maxFileSize) {
+                event.preventDefault();
+                alert("The maximum upload size is 50 MB.");
+                return;
+            }
+
+            if (file.size === 0) {
+                event.preventDefault();
+                alert("The selected file is empty.");
+                return;
+            }
+
+            // Author and subject are optional in the generalized
+            // backend, but partially entered source information
+            // should be completed.
+            if (authorInput && authorSelect) {
+                if (
+                    authorSelect.value &&
+                    authorInput.value.trim()
+                ) {
+                    authorInput.value = "";
+                }
+            }
+
+            if (subjectInput && subjectSelect) {
+                if (
+                    subjectSelect.value &&
+                    subjectInput.value.trim()
+                ) {
+                    subjectInput.value = "";
+                }
+            }
+
+            if (sourceSelect?.value) {
+                if (sourceName) sourceName.value = "";
+                if (sourceUrl) sourceUrl.value = "";
+            } else {
+                const name = sourceName?.value.trim() || "";
+                const url = sourceUrl?.value.trim() || "";
+
+                // Source metadata is optional. If one part is
+                // supplied, require the other part as well.
+                if ((name && !url) || (!name && url)) {
+                    event.preventDefault();
+                    alert(
+                        "Enter both the source name and URL, " +
+                        "or leave both empty."
+                    );
+                    return;
+                }
+
+                if (url && !isValidUrl(url)) {
+                    event.preventDefault();
+                    alert(
+                        "Enter a valid source URL beginning " +
+                        "with http:// or https://."
+                    );
+                    return;
+                }
+            }
+
+            const submitButton = uploadForm.querySelector(
+                'button[type="submit"], button:not([type])'
+            );
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Uploading...";
+            }
+        });
+    }
+
+    // -------------------- Resource Search --------------------
+
+    const searchForm = document.querySelector(
+        'form[action="/search"]'
+    );
+
+    const searchInput = searchForm?.querySelector(
+        '[name="query"]'
+    );
+
+    // Normal HTML forms already submit when Enter is pressed.
+    // No custom Enter handler is necessary.
+
+    // -------------------- Scroll to Search Results --------------------
+
+    const resultsSection = document.querySelector(".results");
+
+    if (resultsSection) {
+        resultsSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 });

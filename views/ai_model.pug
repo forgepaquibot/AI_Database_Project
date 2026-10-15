@@ -1,4 +1,3 @@
-
 doctype html
 html(lang="en")
   head
@@ -8,110 +7,171 @@ html(lang="en")
     link(rel="stylesheet" href="/ai_model_style.css")
 
   body
-    // Defaults prevent errors before all backend routes are updated.
-    - const installedModels = typeof ollamaModels !== 'undefined' && ollamaModels ? ollamaModels : []
-    - const registeredModels = typeof models !== 'undefined' && models ? models : []
+    - const registeredModels = Array.isArray(models) ? models : []
     - const ollamaRegisteredModels = registeredModels.filter(model => model.provider === 'ollama')
-    - const resourceList = typeof resources !== 'undefined' && resources ? resources : []
-    - const jobList = typeof jobs !== 'undefined' && jobs ? jobs : []
-    - const pageMessage = typeof message !== 'undefined' ? message : null
+    - const installedModels = Array.isArray(ollamaModels) ? ollamaModels : []
+    - const resourceList = Array.isArray(resources) ? resources : []
+    - const userResources = Array.isArray(ownedResources) ? ownedResources : []
+    - const processJobs = Array.isArray(processingJobs) ? processingJobs : []
 
     .container
       h1 AI Model Hub
 
-      // Navigation
       .nav-buttons
-        a.nav-btn(href="/resources") PDF Uploads
-        a.nav-btn(href="/") Back to Login/Sign Up
+        a.nav-btn(href="/resources") Data Resources
+        a.nav-btn(href="/") Back to Login
+        a.nav-btn(href="/logout") Logout
 
-      if pageMessage
-        p.message= pageMessage
+      if message
+        p.message= message
 
-      // Register an existing Ollama model
       .section
-        h2 Register Ollama Model
-
-        p Select a model already installed and available through Ollama.
-        p You do not need to upload its weight file again.
+        h2 Register an Ollama Model
+        p Register a model already installed in the Ollama instance connected to this server. This does not upload model weights.
 
         if installedModels.length
           form(action="/register_ollama_model" method="POST")
-            label(for="model_ref") Installed Ollama model
+            label(for="model_ref") Installed model
             select#model_ref(name="model_ref" required)
               each item in installedModels
                 option(value=item.name)= item.name
 
-            label(for="name") Display name
-            input#name(
+            label(for="model_name") Display name
+            input#model_name(
               type="text"
               name="name"
               placeholder="e.g. Llama 3.2"
+              required
             )
 
-            label(for="description") Description
-            textarea#description(
+            label(for="model_description") Description
+            textarea#model_description(
               name="description"
-              placeholder="Optional model description"
+              rows="2"
+              placeholder="Optional description"
             )
+
+            label.share-toggle
+              input(type="checkbox" name="is_public" value="1")
+              span Make this model public for other users of this app
 
             button(type="submit") Register Model
         else
-          p No Ollama models found. Start Ollama and install a model first.
+          p No Ollama models found. Start Ollama and pull a model first.
 
-      // Evaluate a model against a PDF
       .section
-        h2 Evaluate Model Against PDF
+        h2 Process a Resource
+        p Processing extracts structured information and creates searchable embeddings. It does not modify the model's weights.
 
-        p Run a benchmark using questions and expected answers
-          |  associated with an uploaded PDF.
-
-        if ollamaRegisteredModels.length && resourceList.length
-          form(action="/evaluate_model" method="POST")
-            label(for="ai_id") AI Model
-            select#ai_id(name="ai_id" required)
+        if ollamaRegisteredModels.length && userResources.length
+          form#process-resource-form(
+            action="/process_resource"
+            method="POST"
+          )
+            label(for="process-ai-id") Model to connect
+            select#process-ai-id(name="ai_id" required)
               each model in ollamaRegisteredModels
-                option(value=model.ai_id)= model.name + " (" + model.model_ref + ")"
+                option(value=model.ai_id)= model.name + (model.is_public ? " (public)" : "")
 
-            label(for="resource_id") PDF Resource
-            select#resource_id(name="resource_id" required)
-              each resource in resourceList
-                option(value=resource.resource_id)= resource.title
+            label(for="process-resource-id") Resource you own
+            select#process-resource-id(name="resource_id" required)
+              each resource in userResources
+                option(value=resource.resource_id)= resource.title + " — " + resource.resource_type + " (" + resource.processing_status + ")"
 
-            button(type="submit") Run Evaluation
+            button(type="submit") Process Resource and Connect Model
         else
-          p Register an Ollama model and upload or select an accessible PDF first.
+          p Register an Ollama model and upload a resource before processing it.
 
-      // Recent evaluation jobs
       .section
-        h2 Evaluation History
+        h2 Connect an Already Processed Resource
+        p Use a resource that is already indexed with another model. Only accessible, ready resources can be connected.
 
-        if jobList.length
+        if ollamaRegisteredModels.length && resourceList.some(resource => resource.processing_status === 'ready')
+          form(action="/link_resource" method="POST")
+            label(for="link-ai-id") Model
+            select#link-ai-id(name="ai_id" required)
+              each model in ollamaRegisteredModels
+                option(value=model.ai_id)= model.name
+
+            label(for="link-resource-id") Ready resource
+            select#link-resource-id(name="resource_id" required)
+              each resource in resourceList
+                if resource.processing_status === 'ready'
+                  option(value=resource.resource_id)= resource.title + " — " + resource.resource_type
+
+            button(type="submit") Connect Resource
+        else
+          p No ready resources are available to connect yet.
+
+      .section
+        h2 Chat with a Model
+        p The model answers normally when no indexed resources are connected. When resources are connected, relevant passages may be supplied as context.
+
+        if ollamaRegisteredModels.length
+          form#chat-form
+            label(for="chat-ai-id") Model
+            select#chat-ai-id(name="ai_id" required)
+              each model in ollamaRegisteredModels
+                option(value=model.ai_id)= model.name
+
+            label(for="chat-prompt") Your message
+            textarea#chat-prompt(
+              name="prompt"
+              rows="4"
+              maxlength="10000"
+              placeholder="Ask a question..."
+              required
+            )
+
+            input#chat-session-id(
+              type="hidden"
+              name="session_id"
+              value=""
+            )
+
+            button#chat-submit(type="submit") Send Message
+
+          p#chat-status(aria-live="polite")
+          pre#chat-response
+          h3 Sources used
+          ul#chat-sources
+        else
+          p Register an Ollama model to start chatting.
+
+      .section
+        h2 Resource Processing History
+
+        if processJobs.length
           .table-wrapper
             table
               thead
                 tr
-                  th Job ID
-                  th Model
-                  th PDF
-                  th Score
-                  th Threshold
+                  th Job
+                  th Resource
+                  th Type
                   th Status
+                  th Progress
+                  th Created
                   th Completed
+
               tbody
-                each job in jobList
+                each job in processJobs
                   tr
-                    td= job.job_id
-                    td= job.model_name
+                    td= job.processing_job_id
                     td= job.resource_title
-                    td= job.score == null ? "Not scored" : (job.score * 100).toFixed(1) + "%"
-                    td= (job.threshold * 100).toFixed(1) + "%"
+                    td= job.operation
                     td
                       span(class="status status-" + job.status)= job.status
+                    td= job.progress_percent + "%"
+                    td= job.created_at
                     td= job.completed_at || "Not completed"
-        else
-          p No evaluation jobs have been run yet.
 
-      // Registered models
+                  if job.error_message
+                    tr
+                      td(colspan="7")= job.error_message
+        else
+          p No resources have been processed yet.
+
       .section
         h2 Registered Models
 
@@ -124,16 +184,12 @@ html(lang="en")
                 if model.description
                   p= model.description
 
-                p Provider: #{model.provider || "legacy file upload"}
+                p Provider: #{model.provider}
+                p Model reference: #{model.model_ref}
+                p Owner: #{model.owner_username || "Unknown"}
+                p Visibility: #{model.is_public ? "Public" : "Private"}
+                p Origin: #{model.model_origin || "registered"}
                 p Date created: #{model.date_created}
-
-                if model.provider === "ollama"
-                  p Ollama model: #{model.model_ref}
-                  if model.model_digest
-                    p Model digest: #{model.model_digest}
-                else
-                  p Legacy model path: #{model.model_path}
-
         else
           p No models have been registered yet.
 

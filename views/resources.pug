@@ -1,108 +1,235 @@
+
 doctype html
 html(lang="en")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title PDF Resources
+    title Data Resource Hub
     link(rel="stylesheet" href="/resources_style.css")
 
   body
     .container
-      h1 PDF Resource Hub
+      h1 Data Resource Hub
 
-      // ✅ Button to go back to index (login/signup)
-      a.button(href="/") Back to Login/Signup
+      // Navigation
+      .nav-buttons
+        a.button(href="/") Back to Login
+        a.button(href="/ai_model") AI Model Hub
+        a.button(href="/logout") Logout
 
       if message
-        p.message= message
+        p.message(role="status")= message
 
-    .section
-      h2 Upload PDF
-      form(action="/upload" method="POST" enctype="multipart/form-data")
-        // PDF info
-        input(type="text" name="title" placeholder="Title" required)
-        input(type="text" name="description" placeholder="Description")
-        input(type="number" name="pages" placeholder="Number of pages" required)
-        input(type="file" name="pdf" accept="application/pdf" required)
+      // Upload a general resource
+      .section
+        h2 Upload a Resource
 
-        // Author selection
-        label(for="author_id") Author
-        select(name="author_id")
-          option(value="") --Select existing author--
-          if authors
-            each author in authors
-              option(value=author.author_id)= author.author_name
-        input(type="text" name="author_name" placeholder="Or enter new author")
+        p.supported-formats
+          | Supported formats: PDF, TXT, Markdown, CSV, JSON and JSONL.
 
-        // Subject selection
-        label(for="subject_id") Subject
-        select(name="subject_id")
-          option(value="") --Select existing subject--
-          if subjects
-            each subject in subjects
-              option(value=subject.subject_id)= subject.subject_name
-        input(type="text" name="subject_name" placeholder="Or enter new subject")
+        form#resource-upload-form(
+          action="/upload"
+          method="POST"
+          enctype="multipart/form-data"
+        )
+          label(for="resource-title") Title
+          input#resource-title(
+            type="text"
+            name="title"
+            placeholder="Resource title"
+            maxlength="250"
+            required
+          )
 
-        // Source selection
-        label(for="source_id") Source
-        select(name="source_id")
-          option(value="") --Select existing source--
-          if sources
-            each source in sources
-              option(value=source.source_id)= source.source_name
-        input(type="text" name="source_name" placeholder="Or enter new source")
-        input(type="url" name="source_url" placeholder="Source URL (required if new)")
+          label(for="resource-description") Description
+          textarea#resource-description(
+            name="description"
+            placeholder="Describe this resource (optional)"
+            rows="3"
+          )
 
-        button(type="submit") Upload
+          label(for="resource-file") Select file
+          input#resource-file(
+            type="file"
+            name="pdf"
+            accept=".pdf,.txt,.md,.csv,.json,.jsonl"
+            required
+          )
 
-    .section
-      h2 Search PDFs
-      form(action="/search" method="GET")
-        input(type="text" name="query" placeholder="Search by title..." value=query)
+          p.form-hint
+            | Maximum file size: 50 MB.
 
-        // Filter by author
-        select(name="author_id")
-          option(value="") --All authors--
-          if authors
-            each author in authors
-              option(
-                value=author.author_id
-                selected=(author.author_id == selectedAuthor)
-              )= author.author_name
+          // Optional PDF metadata
+          label(for="resource-pages") Number of pages (PDF only)
+          input#resource-pages(
+            type="number"
+            name="pages"
+            min="1"
+            placeholder="Optional"
+          )
 
-        // Filter by subject
-        select(name="subject_id")
-          option(value="") --All subjects--
-          if subjects
-            each subject in subjects
-              option(
-                value=subject.subject_id
-                selected=(subject.subject_id == selectedSubject)
-              )= subject.subject_name
+          // Visibility
+          label.share-toggle
+            input(
+              type="checkbox"
+              name="is_public"
+              value="1"
+            )
+            span Make this resource public to other users
 
-        button(type="submit") Search
-        a.button(href="/ai_model") Go to AI Models
+          // Author metadata
+          label(for="author_id") Author (optional)
+          select#author_id(name="author_id")
+            option(value="") -- Select existing author --
+            if authors
+              each author in authors
+                option(value=author.author_id)= author.author_name
 
-    if results && results.length
-      .results
-        h2 Results
-        each resource in results
-          .card
-            h3= resource.title
-            p= resource.description
-            p Pages: #{resource.pages}
-            p Author: #{resource.author_name || "N/A"}
-            p Subject: #{resource.subject_name || "N/A"}
-            p Source: 
-              if resource.source_url
-                a(href=resource.source_url target="_blank")= resource.source_name
-              else
-                | #{resource.source_name || "N/A"}
-            p Uploaded by: #{resource.uploader || "Unknown"}
-            p Date added: #{resource.date_added || "Unknown"}
-            a(href=resource.file_path target="_blank") View PDF
-    else
-      if results
-        p No results found.
+          label(for="author_name") Or add a new author
+          input#author_name(
+            type="text"
+            name="author_name"
+            placeholder="Author name (optional)"
+          )
+
+          // Subject metadata
+          label(for="subject_id") Subject (optional)
+          select#subject_id(name="subject_id")
+            option(value="") -- Select existing subject --
+            if subjects
+              each subject in subjects
+                option(value=subject.subject_id)= subject.subject_name
+
+          label(for="subject_name") Or add a new subject
+          input#subject_name(
+            type="text"
+            name="subject_name"
+            placeholder="Subject name (optional)"
+          )
+
+          // Source metadata
+          label(for="source_id") Source (optional)
+          select#source_id(name="source_id")
+            option(value="") -- Select existing source --
+            if sources
+              each source in sources
+                option(value=source.source_id)= source.source_name
+
+          label(for="source_name") Or add a new source
+          input#source_name(
+            type="text"
+            name="source_name"
+            placeholder="Source name (optional)"
+          )
+
+          label(for="source_url") Source URL
+          input#source_url(
+            type="url"
+            name="source_url"
+            placeholder="https://example.com"
+          )
+
+          button(type="submit") Upload Resource
+
+      // Search resources
+      .section
+        h2 Search Resources
+
+        form(action="/search" method="GET")
+          label(for="resource-query") Search by title
+          input#resource-query(
+            type="text"
+            name="query"
+            placeholder="Enter a resource title..."
+            value=query
+          )
+
+          label(for="search-author") Filter by author
+          select#search-author(name="author_id")
+            option(value="") -- All authors --
+            if authors
+              each author in authors
+                option(
+                  value=author.author_id
+                  selected=(String(author.author_id) === String(selectedAuthor))
+                )= author.author_name
+
+          label(for="search-subject") Filter by subject
+          select#search-subject(name="subject_id")
+            option(value="") -- All subjects --
+            if subjects
+              each subject in subjects
+                option(
+                  value=subject.subject_id
+                  selected=(String(subject.subject_id) === String(selectedSubject))
+                )= subject.subject_name
+
+          button(type="submit") Search Resources
+
+      // Search results
+      if results && results.length
+        .results
+          h2 Search Results
+
+          each resource in results
+            .card
+              h3= resource.title
+
+              if resource.description
+                p= resource.description
+
+              p
+                strong Type:
+                |  #{resource.resource_type || "Unknown"}
+
+              p
+                strong Processing status:
+                | 
+                span(class="status status-" + (resource.processing_status || "uploaded"))= resource.processing_status || "uploaded"
+
+              if resource.pages
+                p
+                  strong Pages:
+                  |  #{resource.pages}
+
+              p
+                strong Author:
+                |  #{resource.author_name || "N/A"}
+
+              p
+                strong Subject:
+                |  #{resource.subject_name || "N/A"}
+
+              p
+                strong Source:
+                if resource.source_url
+                  a(
+                    href=resource.source_url
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  )= resource.source_name || resource.source_url
+                else
+                  |  #{resource.source_name || "N/A"}
+
+              p
+                strong Uploaded by:
+                |  #{resource.uploader || "Unknown"}
+
+              p
+                strong Date added:
+                |  #{resource.date_added || "Unknown"}
+
+              p
+                strong Visibility:
+                |  #{resource.is_public ? "Public" : "Private"}
+
+              if resource.file_path
+                a.button(
+                  href=resource.file_path
+                ) Download Resource
+
+      else if results
+        .section
+          p No matching resources found.
 
     script(src="/resources.js")

@@ -36,6 +36,10 @@ h2 {
   font-size: 1.4rem;
 }
 
+h3 {
+  color: #26384a;
+}
+
 /* -------------------- Navigation -------------------- */
 
 .nav-buttons {
@@ -63,6 +67,11 @@ h2 {
   background: #0056b3;
 }
 
+.nav-btn:focus-visible {
+  outline: 3px solid #80bdff;
+  outline-offset: 2px;
+}
+
 /* -------------------- Sections -------------------- */
 
 .section {
@@ -71,6 +80,7 @@ h2 {
   margin-bottom: 25px;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  min-width: 0;
 }
 
 .section > p {
@@ -115,12 +125,41 @@ input[type="file"] {
   padding: 9px;
 }
 
+/* Checkboxes and radio buttons should not fill the entire row. */
+
+input[type="checkbox"],
+input[type="radio"] {
+  display: inline-block;
+  width: auto;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0;
+  accent-color: #007bff;
+  flex-shrink: 0;
+}
+
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* Public/private visibility checkbox */
+
+label.share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.share-toggle span {
+  line-height: 1.4;
 }
 
 button {
@@ -138,12 +177,16 @@ button {
   transition: background 0.2s ease;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background: #218838;
 }
 
-button:focus-visible,
-.nav-btn:focus-visible {
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+button:focus-visible {
   outline: 3px solid #80bdff;
   outline-offset: 2px;
 }
@@ -158,9 +201,10 @@ button:focus-visible,
   text-align: center;
   border: 1px solid #f5c2c7;
   border-radius: 6px;
+  overflow-wrap: anywhere;
 }
 
-/* -------------------- Registered Models -------------------- */
+/* -------------------- Registered Models and Resources -------------------- */
 
 .results {
   margin-top: 20px;
@@ -195,7 +239,7 @@ button:focus-visible,
   text-decoration: underline;
 }
 
-/* -------------------- Evaluation History Table -------------------- */
+/* -------------------- Tables -------------------- */
 
 .table-wrapper {
   width: 100%;
@@ -238,7 +282,7 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* -------------------- Job Status Labels -------------------- */
+/* -------------------- Resource and Job Status Labels -------------------- */
 
 .status {
   display: inline-block;
@@ -250,24 +294,87 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
-.status-pending {
+/* Queued or waiting */
+
+.status-pending,
+.status-queued,
+.status-uploaded {
   color: #805b00;
   background: #fff1c2;
 }
 
-.status-running {
+/* Currently processing */
+
+.status-running,
+.status-processing {
   color: #0757a6;
   background: #dcecff;
 }
 
-.status-done {
+/* Successfully completed or indexed */
+
+.status-done,
+.status-ready,
+.status-completed {
   color: #176b35;
   background: #d8f3df;
 }
 
+/* Failed operations */
+
 .status-failed {
   color: #a61b1b;
   background: #ffe0e0;
+}
+
+/* Cancelled operations */
+
+.status-cancelled {
+  color: #526171;
+  background: #e5e7eb;
+}
+
+/* -------------------- Chat Interface -------------------- */
+
+#chat-form {
+  margin-bottom: 18px;
+}
+
+#chat-prompt {
+  min-height: 110px;
+}
+
+#chat-status {
+  margin-top: 12px;
+  color: #526171;
+  overflow-wrap: anywhere;
+}
+
+#chat-response {
+  min-height: 50px;
+  max-height: 500px;
+  overflow: auto;
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid #dce3eb;
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: #263238;
+  font-family: Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#chat-sources {
+  padding-left: 22px;
+  color: #526171;
+}
+
+#chat-sources li {
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
 }
 
 /* -------------------- Responsive Layout -------------------- */
@@ -307,11 +414,14 @@ tbody tr:last-child td {
 
   .nav-btn {
     text-align: center;
-    margin: 0;
   }
 
   th,
   td {
     padding: 10px;
+  }
+
+  #chat-response {
+    max-height: 350px;
   }
 }

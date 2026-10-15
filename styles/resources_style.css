@@ -1,121 +1,377 @@
+
+/* -------------------- Base Layout -------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #eef2f7;
+  color: #263238;
+  line-height: 1.5;
 }
 
 .container {
   width: 80%;
-  margin: auto;
-  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 0;
+}
+
+h1,
+h2,
+h3 {
+  color: #26384a;
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 30px;
+  margin: 0 0 30px;
+  font-size: 2rem;
 }
 
-.section {
-  background: white;
-  padding: 20px;
+h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+/* -------------------- Navigation -------------------- */
+
+.nav-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 25px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-input {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-button {
-  padding: 10px;
-  width: 100%;
-  background: #28a745;
+a.button {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #007bff;
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #218838;
-}
-
-.results {
-  margin-top: 20px;
-}
-
-.card {
-  background: white;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-}
-
-.card a {
-  color: #007BFF;
-  text-decoration: none;
-}
-
-.card a:hover {
-  text-decoration: underline;
-}
-
-.message {
-  color: red;
   text-align: center;
-}
-
-/* --- Select dropdowns --- */
-select {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-}
-
-/* --- Labels --- */
-label {
+  text-decoration: none;
   font-weight: bold;
-  margin-top: 10px;
-  display: block;
-}
-
-/* --- AI button link styled like button --- */
-a.button {
-  display: block;
-  text-align: center;
-  margin-top: 10px;
-  padding: 10px;
-  background: #007BFF;
-  color: white;
-  border-radius: 6px;
-  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
 a.button:hover {
   background: #0056b3;
+  text-decoration: none;
 }
 
-/* --- Better card spacing --- */
-.card p {
-  margin: 5px 0;
+.nav-buttons .button {
+  flex: 0 1 auto;
 }
 
-/* --- Optional: nicer section spacing --- */
-.section h2 {
-  margin-top: 0;
+.card .button {
+  margin-top: 12px;
+}
+
+/* -------------------- Sections -------------------- */
+
+.section {
+  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto 25px;
+  padding: 25px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  min-width: 0;
+}
+
+.section > p {
+  color: #526171;
+}
+
+.supported-formats {
+  font-size: 0.95rem;
+  color: #526171;
+}
+
+.form-hint {
+  margin-top: -8px;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* -------------------- Forms -------------------- */
+
+form {
+  width: 100%;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: #34495e;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  margin: 8px 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  color: #263238;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+input[type="file"] {
+  padding: 9px;
+  background: #f8fafc;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8793a1;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+/* Public/private checkbox */
+
+label.share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+label.share-toggle input[type="checkbox"] {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #007bff;
+}
+
+.share-toggle span {
+  line-height: 1.4;
+}
+
+/* -------------------- Buttons -------------------- */
+
+button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  margin: 12px 0 0;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #218838;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+a.button:focus-visible {
+  outline: 3px solid #80bdff;
+  outline-offset: 3px;
+}
+
+/* -------------------- Messages -------------------- */
+
+.message {
+  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  padding: 12px 16px;
+  background: #fff0f0;
+  color: #b42318;
+  text-align: center;
+  border: 1px solid #f5c2c7;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* -------------------- Resource Results -------------------- */
+
+.results {
+  width: 80%;
+  max-width: 1200px;
+  margin: 25px auto;
 }
 
 .results h2 {
-  margin-left: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.card {
+  padding: 20px;
+  margin-bottom: 18px;
+  background: white;
+  border: 1px solid #dce3eb;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+  overflow-wrap: anywhere;
+}
+
+.card h3 {
+  color: #164675;
+}
+
+.card p {
+  margin: 7px 0;
+  color: #526171;
+}
+
+.card strong {
+  color: #34495e;
+}
+
+.card a:not(.button) {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.card a:not(.button):hover {
+  text-decoration: underline;
+}
+
+/* -------------------- Processing Statuses -------------------- */
+
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+
+.status-uploaded,
+.status-queued,
+.status-pending {
+  color: #805b00;
+  background: #fff1c2;
+}
+
+.status-processing,
+.status-running {
+  color: #0757a6;
+  background: #dcecff;
+}
+
+.status-ready,
+.status-done,
+.status-completed {
+  color: #176b35;
+  background: #d8f3df;
+}
+
+.status-failed {
+  color: #a61b1b;
+  background: #ffe0e0;
+}
+
+.status-cancelled {
+  color: #526171;
+  background: #e5e7eb;
+}
+
+/* -------------------- Responsive Layout -------------------- */
+
+@media (max-width: 900px) {
+  .container,
+  .section,
+  .results,
+  .message {
+    width: 92%;
+  }
+
+  .section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    width: 94%;
+    padding: 20px 0;
+  }
+
+  h1 {
+    font-size: 1.65rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  .section {
+    width: 94%;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+
+  .results,
+  .message {
+    width: 94%;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+  }
+
+  .nav-buttons .button {
+    display: block;
+    width: 100%;
+  }
+
+  .card {
+    padding: 15px;
+  }
 }
