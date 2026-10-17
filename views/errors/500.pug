@@ -1,0 +1,8 @@
+extends ../layout.pug
+
+block content
+  section.error-state
+    p.eyebrow ERROR
+    h1 Something went wrong
+    p= message || 'The application could not complete your request.'
+    a.button(href=currentUser ? '/dashboard' : '/') Return to the app

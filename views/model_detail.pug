@@ -1,0 +1,156 @@
+extends layout.pug
+
+block styles
+  link(rel='stylesheet' href='/model_detail_style.css')
+
+block content
+  p.breadcrumbs
+    a(href='/ai_model') Model Hub
+    span  / Model settings
+
+  header.page-heading
+    p.eyebrow MODEL CONFIGURATION
+    h1= model.name
+    p.lead Configure this model's behavior and the resources available to your conversations.
+
+  if message
+    p.notice(role='status' aria-live='polite')= message
+
+  section.panel.model-summary
+    .model-summary-main
+      span.model-provider= model.provider || 'ollama'
+      h2= model.name
+      p.model-reference= model.model_ref
+      p= model.description || 'No description provided.'
+
+    .model-summary-meta
+      span.visibility(class=model.is_public ? 'public' : 'private')= model.is_public ? 'Public' : 'Private'
+      p.muted Owner: #{model.owner_username || 'Unknown'}
+
+  // Only the model owner can change its model-level settings.
+  if isOwner
+    section.panel
+      .panel-heading
+        div
+          p.eyebrow PERSONALITY
+          h2 Model behavior and welcome message
+          p.muted
+            | These settings customize your model's behavior at runtime.
+            | They do not change the underlying model weights.
+
+      form#model-settings-form(
+        action='/models/' + model.ai_id + '/settings'
+        method='post'
+      )
+        label.field(for='model-name')
+          span Display name
+          input#model-name(
+            type='text'
+            name='name'
+            maxlength='200'
+            required
+            value=model.name
+          )
+
+        label.field(for='model-description')
+          span Description
+          textarea#model-description(
+            name='description'
+            rows='3'
+            maxlength='2000'
+            placeholder='Describe this model.'
+          )= model.description || ''
+
+        label.field(for='personality-prompt')
+          span Personality / system instructions
+          textarea#personality-prompt(
+            name='personality_prompt'
+            rows='7'
+            maxlength='12000'
+            placeholder='Define tone, role, boundaries, and response preferences for this model.'
+          )= model.personality_prompt || ''
+          small.form-help
+            | Instructions sent to the model as part of its system message.
+            | #[span#personality-count 0 characters]
+
+        label.field(for='welcome-prompt')
+          span Unique welcome message
+          textarea#welcome-prompt(
+            name='welcome_message'
+            rows='3'
+            maxlength='2000'
+            placeholder='Write a unique greeting for this model.'
+          )= model.welcome_message || ''
+          small.form-help
+            | Displayed in the chat interface when this model is selected.
+            | #[span#welcome-count 0 characters]
+
+        label.checkbox-label(for='model-detail-public')
+          input#model-detail-public(
+            type='checkbox'
+            name='is_public'
+            value='1'
+            checked=Boolean(model.is_public)
+          )
+          span
+            strong Make this model registration public
+            small Other signed-in users can discover and access this model if it is available to them.
+
+        .form-actions
+          button(type='submit') Save model settings
+          a.button.secondary(href='/chat') Open chat
+
+  else
+    section.panel
+      .panel-heading
+        div
+          p.eyebrow MODEL SETTINGS
+          h2 Owner-managed configuration
+          p.muted
+            | Only the model owner can edit its personality instructions,
+            | welcome message, description, and visibility.
+      a.button.secondary(href='/chat') Chat with this model
+
+  // Resource links belong to the current user's account, not exclusively
+  // to the model owner. The route still checks access to every resource.
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow KNOWLEDGE
+        h2 Resources linked for your account
+        p.muted
+          | Choose ready resources you can access. These links determine
+          | which indexed content can be retrieved during your conversations.
+
+    form(
+      action='/models/' + model.ai_id + '/resources'
+      method='post'
+    )
+      if availableResources.length
+        .resource-checkbox-list
+          each resource in availableResources
+            label.resource-checkbox(for='resource-' + resource.resource_id)
+              input(
+                id='resource-' + resource.resource_id
+                type='checkbox'
+                name='resource_ids'
+                value=resource.resource_id
+                checked=Boolean(resource.linked)
+              )
+              span
+                strong= resource.title
+                small
+                  | #{resource.resource_type}
+                  |  · #{resource.is_public ? 'Public resource' : 'Your resource'}
+
+        .form-actions
+          button(type='submit') Save resource links
+
+      else
+        .empty-state
+          h3 No ready resources available
+          p Upload and index a resource before linking it to this model.
+          a.button.secondary(href='/resources') Open resource library
+
+block scripts
+  script(src='/model_detail.js' defer)

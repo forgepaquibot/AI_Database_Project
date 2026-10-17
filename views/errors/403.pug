@@ -1,0 +1,8 @@
+extends ../layout.pug
+
+block content
+  section.error-state
+    p.eyebrow 403
+    h1 Access denied
+    p= message || 'You do not have permission to view this page.'
+    a.button(href=currentUser ? '/dashboard' : '/') Return to the app

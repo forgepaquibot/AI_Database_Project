@@ -1,0 +1,47 @@
+.profile-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 1rem 1.2rem;
+  align-items: center;
+  max-width: 760px;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #9fb2ff, #4565e6);
+  color: white;
+  font-size: 2rem;
+  font-weight: 850;
+}
+
+.profile-card h2 {
+  margin: 0 0 .3rem;
+}
+
+.profile-card .details-grid,
+.profile-card .muted,
+.profile-card .button {
+  grid-column: 1 / -1;
+}
+
+.profile-card .details-grid {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 520px) {
+  .profile-card {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .profile-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    font-size: 1.5rem;
+  }
+}

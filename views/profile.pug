@@ -1,0 +1,31 @@
+extends layout.pug
+
+block styles
+  link(rel='stylesheet' href='/profile_style.css')
+
+block content
+  header.page-heading
+    p.eyebrow ACCOUNT
+    h1 Your profile
+    p.lead Your Auth0 sign-in identity is connected to a local application record.
+
+  section.panel.profile-card
+    .profile-avatar= (user.username || 'U').slice(0, 1).toUpperCase()
+
+    div
+      h2= user.username
+      p.muted Local application username
+
+    dl.details-grid
+      dt Application user ID
+      dd= user.user_id
+      dt Account created
+      dd= user.created_at || 'Not available'
+      dt Auth0 identity linked
+      dd= user.auth0_sub ? 'Yes' : 'Not linked'
+      if auth0Profile && auth0Profile.email
+        dt Auth0 email
+        dd= auth0Profile.email
+
+    p.muted Your account identity is managed by Auth0. Do not share your session or account credentials.
+    a.button.secondary(href='/dashboard') Back to dashboard

@@ -1,0 +1,65 @@
+extends layout.pug
+
+block styles
+  link(rel='stylesheet' href='/training_style.css')
+
+block content
+  header.page-heading
+    p.eyebrow TRAINING LAB
+    h1 Fine-tuning
+    p.lead Fine-tuning is a separate process from RAG indexing. This page currently checks the allowlist; job execution is not yet enabled.
+
+  if message
+    p.notice(role='status' aria-live='polite')= message
+
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow COMPATIBILITY
+        h2 Check a base-model entry
+        p.muted Enter the exact Ollama model tag. Compatibility here means the catalog permits it; it does not prove training/export works.
+
+    .form-grid
+      label.field(for='model-ref')
+        span Ollama model reference
+        input#model-ref(type='text' maxlength='200' placeholder='e.g. exact-local-model:tag')
+
+    .form-actions
+      button#check-compatibility(type='button') Check catalog
+      p#compatibility-result.form-status(role='status' aria-live='polite') No check performed yet.
+
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow BASE MODEL CATALOG
+        h2 Available entries
+        p.muted Entries stay disabled until a real training method and export workflow are validated.
+
+    if bases.length
+      .table-wrap
+        table
+          thead
+            tr
+              th Model
+              th Ollama reference
+              th Training checkpoint
+              th Method
+              th State
+          tbody
+            each base in bases
+              tr
+                td= base.displayName
+                td= base.ollamaModelRef || base.modelRef
+                td= base.checkpointId
+                td= base.method
+                td
+                  span.status(class=base.enabled ? 'status-ready' : 'status-disabled')= base.enabled ? 'Enabled' : 'Disabled'
+    else
+      p.empty-copy No base-model entries are configured.
+
+  section.notice-panel
+    h2 Training is not enabled yet
+    p The Python worker supplied with this project is a safe placeholder. It does not claim success or start a GPU job. Before enabling training, validate model/checkpoint compatibility, dataset preparation, hardware requirements, checkpoint storage, and the route that tracks real job progress.
+
+block scripts
+  script(src='/training.js' defer)

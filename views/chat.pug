@@ -1,0 +1,102 @@
+extends layout.pug
+
+block styles
+  link(rel='stylesheet' href='/chat_style.css')
+
+block content
+  header.page-heading
+    p.eyebrow CONVERSATIONS
+    h1 Chat with a model
+    p.lead
+      | Chat with an accessible Ollama model and retrieve relevant
+      | excerpts from resources linked to your account.
+
+  if message
+    p.notice(role='status' aria-live='polite')= message
+
+  section.chat-workspace
+    .chat-controls.panel
+      if models.length
+        form#chat-form
+          label.field(for='ai_id')
+            span Model
+            select#ai_id(name='ai_id' required)
+              option(value='') Choose a model
+              each model in models
+                option(
+                  value=model.ai_id
+                  data-welcome-message=model.welcome_message || ''
+                )= model.name + ' — ' + model.owner_username
+
+          label.field(for='session_id')
+            span Conversation
+            select#session_id(name='session_id')
+              option(value='') Start a new conversation
+              each session in sessions
+                option(
+                  value=session.session_id
+                  data-ai-id=session.ai_id
+                )= (session.title || 'Conversation') + ' · ' + (session.updated_at || '')
+
+          section#welcome-panel.welcome-panel(hidden aria-live='polite')
+            p.eyebrow MODEL WELCOME
+            p#welcome-text
+
+          label.field(for='prompt')
+            span Your message
+            textarea#prompt(
+              name='prompt'
+              rows='5'
+              maxlength='10000'
+              required
+              placeholder='Ask a question about your topic or resources...'
+            )
+
+          .form-actions
+            button#send-message(type='submit') Send message
+            p#chat-status.form-status(role='status' aria-live='polite')
+      else
+        .empty-state
+          h2 No chat models available
+          p Register an installed Ollama chat model first.
+          a.button(href='/ai_model') Open Model Hub
+
+    section.panel.chat-output
+      .panel-heading
+        div
+          p.eyebrow RESPONSE
+          h2 Latest answer
+
+      section#chat-response.chat-response(aria-live='polite' hidden)
+        pre#answer-text
+        .source-panel
+          strong Retrieved sources
+          p#sources-text.muted
+
+      p#chat-empty.empty-copy
+        | Select a model and send a message to see its response here.
+
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow HISTORY
+        h2 Recent conversations
+
+    if sessions.length
+      .conversation-list
+        each session in sessions
+          article.conversation-item
+            div
+              strong= session.title || 'Untitled conversation'
+              p.muted= session.updated_at || ''
+            button.button.secondary(
+              type='button'
+              data-load-session=session.session_id
+              data-ai-id=session.ai_id
+            ) Continue
+    else
+      p.empty-copy
+        | Your saved conversations will appear here after your first message.
+
+block scripts
+  script(src='/chat.js' defer)

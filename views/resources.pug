@@ -1,235 +1,160 @@
+extends layout.pug
 
-doctype html
-html(lang="en")
-  head
-    meta(charset="UTF-8")
-    meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Data Resource Hub
-    link(rel="stylesheet" href="/resources_style.css")
+block styles
+  link(rel='stylesheet' href='/resources_style.css')
 
-  body
-    .container
-      h1 Data Resource Hub
+block content
+  header.page-heading
+    p.eyebrow KNOWLEDGE LIBRARY
+    h1 Data Resource Hub
+    p.lead Upload and organize source material that can be indexed and retrieved during model conversations.
 
-      // Navigation
-      .nav-buttons
-        a.button(href="/") Back to Login
-        a.button(href="/ai_model") AI Model Hub
-        a.button(href="/logout") Logout
+  if message
+    p.notice(role='status' aria-live='polite')= message
 
-      if message
-        p.message(role="status")= message
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow RESOURCE MANAGEMENT
+        h2 Upload a resource
+        p.muted Supported formats: PDF, TXT, Markdown, CSV, JSON, and JSONL. Maximum 50 MB.
+    form#resource-upload-form(action='/upload_resource' method='post' enctype='multipart/form-data')
+      .form-grid
+        label.field.full-width(for='resource-title')
+          span Resource title
+          input#resource-title(type='text' name='title' maxlength='250' required placeholder='e.g. Introduction to Machine Learning')
+        label.field.full-width(for='resource-description')
+          span Description
+          textarea#resource-description(name='description' rows='3' maxlength='5000' placeholder='Describe what this resource contains.')
+        label.field.full-width(for='resource-file')
+          span Select resource file
+          input#resource-file(type='file' name='resource_file' accept='.pdf,.txt,.md,.csv,.json,.jsonl' required)
+          small#file-help.form-help PDF, TXT, MD, CSV, JSON, or JSONL · up to 50 MB
+        label.field(for='resource-pages')
+          span Number of pages (PDF only)
+          input#resource-pages(type='number' name='pages' min='1' step='1' placeholder='Optional')
+        .field
+          span.field-label Visibility
+          label.checkbox-label(for='resource-public')
+            input#resource-public(type='checkbox' name='is_public' value='1')
+            span
+              strong Make this resource public
+              small Other signed-in users may access this resource.
 
-      // Upload a general resource
-      .section
-        h2 Upload a Resource
-
-        p.supported-formats
-          | Supported formats: PDF, TXT, Markdown, CSV, JSON and JSONL.
-
-        form#resource-upload-form(
-          action="/upload"
-          method="POST"
-          enctype="multipart/form-data"
-        )
-          label(for="resource-title") Title
-          input#resource-title(
-            type="text"
-            name="title"
-            placeholder="Resource title"
-            maxlength="250"
-            required
-          )
-
-          label(for="resource-description") Description
-          textarea#resource-description(
-            name="description"
-            placeholder="Describe this resource (optional)"
-            rows="3"
-          )
-
-          label(for="resource-file") Select file
-          input#resource-file(
-            type="file"
-            name="pdf"
-            accept=".pdf,.txt,.md,.csv,.json,.jsonl"
-            required
-          )
-
-          p.form-hint
-            | Maximum file size: 50 MB.
-
-          // Optional PDF metadata
-          label(for="resource-pages") Number of pages (PDF only)
-          input#resource-pages(
-            type="number"
-            name="pages"
-            min="1"
-            placeholder="Optional"
-          )
-
-          // Visibility
-          label.share-toggle
-            input(
-              type="checkbox"
-              name="is_public"
-              value="1"
-            )
-            span Make this resource public to other users
-
-          // Author metadata
-          label(for="author_id") Author (optional)
-          select#author_id(name="author_id")
-            option(value="") -- Select existing author --
-            if authors
-              each author in authors
+      .metadata-panel
+        h3 Metadata
+        p.muted Optional metadata helps other users discover and understand your source material.
+        .form-grid
+          label.field(for='author_id')
+            span Existing author
+            select#author_id(name='author_id')
+              option(value='') Choose an author
+              each author in authors || []
                 option(value=author.author_id)= author.author_name
-
-          label(for="author_name") Or add a new author
-          input#author_name(
-            type="text"
-            name="author_name"
-            placeholder="Author name (optional)"
-          )
-
-          // Subject metadata
-          label(for="subject_id") Subject (optional)
-          select#subject_id(name="subject_id")
-            option(value="") -- Select existing subject --
-            if subjects
-              each subject in subjects
+          label.field(for='author_name')
+            span Or add an author
+            input#author_name(type='text' name='author_name' maxlength='250' placeholder='Author name')
+          label.field(for='subject_id')
+            span Existing subject
+            select#subject_id(name='subject_id')
+              option(value='') Choose a subject
+              each subject in subjects || []
                 option(value=subject.subject_id)= subject.subject_name
-
-          label(for="subject_name") Or add a new subject
-          input#subject_name(
-            type="text"
-            name="subject_name"
-            placeholder="Subject name (optional)"
-          )
-
-          // Source metadata
-          label(for="source_id") Source (optional)
-          select#source_id(name="source_id")
-            option(value="") -- Select existing source --
-            if sources
-              each source in sources
+          label.field(for='subject_name')
+            span Or add a subject
+            input#subject_name(type='text' name='subject_name' maxlength='250' placeholder='Subject name')
+          label.field(for='source_id')
+            span Existing source
+            select#source_id(name='source_id')
+              option(value='') Choose a source
+              each source in sources || []
                 option(value=source.source_id)= source.source_name
+          label.field(for='source_name')
+            span Or add a source
+            input#source_name(type='text' name='source_name' maxlength='250' placeholder='Source name')
+          label.field.full-width(for='source_url')
+            span Source URL (optional)
+            input#source_url(type='url' name='source_url' maxlength='2048' placeholder='https://example.com/resource')
+      .form-actions
+        button#upload-submit-button(type='submit') Upload resource
+        p#upload-status.form-status(role='status' aria-live='polite')
 
-          label(for="source_name") Or add a new source
-          input#source_name(
-            type="text"
-            name="source_name"
-            placeholder="Source name (optional)"
-          )
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow DISCOVER
+        h2 Search resources
+        p.muted Search resources you own and resources other users have made public.
+    form.search-form(action='/search' method='get')
+      .form-grid
+        label.field.full-width(for='resource-query')
+          span Search by title
+          input#resource-query(type='search' name='query' value=query || '' placeholder='Type a title or keyword')
+        label.field(for='search-author')
+          span Author
+          select#search-author(name='author_id')
+            option(value='') All authors
+            each author in authors || []
+              option(value=author.author_id selected=(String(selectedAuthor || '') === String(author.author_id)))= author.author_name
+        label.field(for='search-subject')
+          span Subject
+          select#search-subject(name='subject_id')
+            option(value='') All subjects
+            each subject in subjects || []
+              option(value=subject.subject_id selected=(String(selectedSubject || '') === String(subject.subject_id)))= subject.subject_name
+      .form-actions
+        button(type='submit') Search resources
+        a.button.secondary(href='/resources') Clear filters
 
-          label(for="source_url") Source URL
-          input#source_url(
-            type="url"
-            name="source_url"
-            placeholder="https://example.com"
-          )
-
-          button(type="submit") Upload Resource
-
-      // Search resources
-      .section
-        h2 Search Resources
-
-        form(action="/search" method="GET")
-          label(for="resource-query") Search by title
-          input#resource-query(
-            type="text"
-            name="query"
-            placeholder="Enter a resource title..."
-            value=query
-          )
-
-          label(for="search-author") Filter by author
-          select#search-author(name="author_id")
-            option(value="") -- All authors --
-            if authors
-              each author in authors
-                option(
-                  value=author.author_id
-                  selected=(String(author.author_id) === String(selectedAuthor))
-                )= author.author_name
-
-          label(for="search-subject") Filter by subject
-          select#search-subject(name="subject_id")
-            option(value="") -- All subjects --
-            if subjects
-              each subject in subjects
-                option(
-                  value=subject.subject_id
-                  selected=(String(subject.subject_id) === String(selectedSubject))
-                )= subject.subject_name
-
-          button(type="submit") Search Resources
-
-      // Search results
-      if results && results.length
-        .results
-          h2 Search Results
-
+  if results
+    section.results-section
+      .section-heading
+        div
+          p.eyebrow SEARCH
+          h2 Search results
+          p.muted #{results.length} matching resource(s).
+      if results.length
+        .results-grid
           each resource in results
-            .card
+            article.resource-card
+              .card-topline
+                span.file-chip= (resource.resource_type || 'resource').toUpperCase()
+                span.status(class='status-' + (resource.processing_status || 'uploaded'))= resource.processing_status || 'uploaded'
               h3= resource.title
-
               if resource.description
-                p= resource.description
+                p.resource-description= resource.description
+              dl.details-grid
+                dt Author
+                dd= resource.author_name || 'Not specified'
+                dt Subject
+                dd= resource.subject_name || 'Not specified'
+                dt Source
+                dd
+                  if resource.source_url
+                    a(href=resource.source_url target='_blank' rel='noopener noreferrer')= resource.source_name || resource.source_url
+                  else
+                    | #{resource.source_name || 'Not specified'}
+                dt Uploaded by
+                dd= resource.uploader || resource.owner_username || 'Unknown'
+                dt Date added
+                dd= resource.date_added || 'Unknown'
+                dt Visibility
+                dd= resource.is_public ? 'Public' : 'Private'
+                if resource.pages
+                  dt Pages
+                  dd= resource.pages
+              .card-actions
+                if resource.file_path
+                  a.button.secondary(href=resource.file_path) Download resource
+                a.text-link(href='/ai_model') Manage indexing
+      else
+        .empty-state
+          h3 No matching resources
+          p Try changing your query, author, or subject filters.
+  else
+    section.empty-state
+      h2 Build your knowledge library
+      p Upload a resource, then open the Model Hub to index it and link it to a model for RAG chat.
 
-              p
-                strong Type:
-                |  #{resource.resource_type || "Unknown"}
-
-              p
-                strong Processing status:
-                | 
-                span(class="status status-" + (resource.processing_status || "uploaded"))= resource.processing_status || "uploaded"
-
-              if resource.pages
-                p
-                  strong Pages:
-                  |  #{resource.pages}
-
-              p
-                strong Author:
-                |  #{resource.author_name || "N/A"}
-
-              p
-                strong Subject:
-                |  #{resource.subject_name || "N/A"}
-
-              p
-                strong Source:
-                if resource.source_url
-                  a(
-                    href=resource.source_url
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  )= resource.source_name || resource.source_url
-                else
-                  |  #{resource.source_name || "N/A"}
-
-              p
-                strong Uploaded by:
-                |  #{resource.uploader || "Unknown"}
-
-              p
-                strong Date added:
-                |  #{resource.date_added || "Unknown"}
-
-              p
-                strong Visibility:
-                |  #{resource.is_public ? "Public" : "Private"}
-
-              if resource.file_path
-                a.button(
-                  href=resource.file_path
-                ) Download Resource
-
-      else if results
-        .section
-          p No matching resources found.
-
-    script(src="/resources.js")
+block scripts
+  script(src='/resources.js' defer)

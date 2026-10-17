@@ -1,0 +1,16 @@
+#compatibility-result {
+  align-self: center;
+}
+
+.status-disabled {
+  background: #eef1f6;
+  color: #58657a;
+}
+
+.notice-panel {
+  margin-top: 1.4rem;
+}
+
+.panel .table-wrap {
+  margin-top: .9rem;
+}

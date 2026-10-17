@@ -1,0 +1,31 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+    meta(name='theme-color' content='#f3f6fb')
+    title= (typeof title !== 'undefined' && title) ? `${title} | AI Model Hub` : 'AI Model Hub'
+    link(rel='stylesheet' href='/main.css')
+    block styles
+  body
+    header.site-header
+      a.brand(href=currentUser ? '/dashboard' : '/')
+        span.brand-mark AI
+        span.brand-name AI Model Hub
+      nav.main-nav(aria-label='Main navigation')
+        if currentUser
+          a(class=currentPath === '/dashboard' ? 'active' : '' href='/dashboard' aria-current=currentPath === '/dashboard' ? 'page' : false) Dashboard
+          a(class=currentPath.startsWith('/resources') ? 'active' : '' href='/resources' aria-current=currentPath.startsWith('/resources') ? 'page' : false) Resources
+          a(class=currentPath.startsWith('/ai_model') || currentPath.startsWith('/models/') ? 'active' : '' href='/ai_model') Models
+          a(class=currentPath.startsWith('/chat') ? 'active' : '' href='/chat') Chat
+          a(class=currentPath.startsWith('/training') ? 'active' : '' href='/training') Fine-tuning
+          a(class=currentPath.startsWith('/profile') ? 'active' : '' href='/profile') Profile
+          a.nav-logout(href='/logout') Log out
+        else if auth0Configured
+          a(href='/login') Log in
+          a.nav-signup(href='/signup') Create account
+    main.page-container
+      block content
+    footer.site-footer
+      p AI Model Hub · Ollama inference, resource-based RAG, and model customization
+    block scripts

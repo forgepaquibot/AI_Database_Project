@@ -1,0 +1,62 @@
+[
+  {
+    "ollamaModelRef": "smollm2:135m",
+    "modelRef": "smollm2:135m",
+    "displayName": "SmolLM2 135M Instruct",
+    "checkpointId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until the Ollama tag, checkpoint compatibility, license terms, and export workflow are verified."
+  },
+  {
+    "ollamaModelRef": "smollm2:360m",
+    "modelRef": "smollm2:360m",
+    "displayName": "SmolLM2 360M Instruct",
+    "checkpointId": "HuggingFaceTB/SmolLM2-360M-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until compatibility and export have been tested."
+  },
+  {
+    "ollamaModelRef": "smollm2:1.7b",
+    "modelRef": "smollm2:1.7b",
+    "displayName": "SmolLM2 1.7B Instruct",
+    "checkpointId": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until compatibility and export have been tested."
+  },
+  {
+    "ollamaModelRef": "qwen2.5:0.5b-instruct",
+    "modelRef": "qwen2.5:0.5b-instruct",
+    "displayName": "Qwen2.5 0.5B Instruct",
+    "checkpointId": "Qwen/Qwen2.5-0.5B-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until compatibility and export have been tested."
+  },
+  {
+    "ollamaModelRef": "qwen2.5:1.5b-instruct",
+    "modelRef": "qwen2.5:1.5b-instruct",
+    "displayName": "Qwen2.5 1.5B Instruct",
+    "checkpointId": "Qwen/Qwen2.5-1.5B-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until compatibility and export have been tested."
+  },
+  {
+    "ollamaModelRef": "qwen2.5:7b-instruct",
+    "modelRef": "qwen2.5:7b-instruct",
+    "displayName": "Qwen2.5 7B Instruct",
+    "checkpointId": "Qwen/Qwen2.5-7B-Instruct",
+    "method": "sft_lora",
+    "license": "Apache-2.0",
+    "enabled": false,
+    "notes": "Disabled until the exact Ollama tag, compatibility, and export workflow are verified."
+  }
+]

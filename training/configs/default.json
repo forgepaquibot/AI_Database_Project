@@ -1,0 +1,5 @@
+{
+  "method": "sft_lora",
+  "enabled": false,
+  "notes": "Training is intentionally disabled until the worker and model compatibility have been tested."
+}

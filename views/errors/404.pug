@@ -1,0 +1,8 @@
+extends ../layout.pug
+
+block content
+  section.error-state
+    p.eyebrow 404
+    h1 Page not found
+    p= message || 'The page you requested could not be found.'
+    a.button(href=currentUser ? '/dashboard' : '/') Return to the app

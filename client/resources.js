@@ -1,235 +1,127 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // -------------------- Preserve Scroll Position --------------------
+'use strict';
 
-    const scrollStorageKey = "resourcesScrollPosition";
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('#resource-upload-form');
+  const fileInput = document.querySelector('#resource-file');
+  const pagesInput = document.querySelector('#resource-pages');
+  const submitButton = document.querySelector('#upload-submit-button');
+  const status = document.querySelector('#upload-status');
 
-    function saveScrollPosition() {
-        sessionStorage.setItem(
-            scrollStorageKey,
-            JSON.stringify({
-                x: window.scrollX,
-                y: window.scrollY
-            })
-        );
+  const maxBytes = 50 * 1024 * 1024;
+  const allowed = new Set([
+    '.pdf', '.txt', '.md', '.csv', '.json', '.jsonl'
+  ]);
+
+  function extensionOf(name) {
+    const dot = name.lastIndexOf('.');
+    return dot < 0 ? '' : name.slice(dot).toLowerCase();
+  }
+
+  function selectedPdf() {
+    return extensionOf(fileInput?.files?.[0]?.name || '') === '.pdf';
+  }
+
+  function updatePages() {
+    if (!pagesInput) return;
+
+    pagesInput.disabled = !selectedPdf();
+
+    if (!selectedPdf()) {
+      pagesInput.value = '';
     }
 
-    // Prevent the browser from overriding our saved position.
-    if ("scrollRestoration" in history) {
-        history.scrollRestoration = "manual";
+    pagesInput.placeholder = selectedPdf()
+      ? 'Optional'
+      : 'PDF only';
+  }
+
+  function showStatus(message) {
+    if (status) status.textContent = message;
+  }
+
+  fileInput?.addEventListener('change', () => {
+    updatePages();
+    showStatus('');
+
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    if (!allowed.has(extensionOf(file.name))) {
+      showStatus(
+        'Unsupported format. Choose PDF, TXT, MD, CSV, JSON, or JSONL.'
+      );
+      fileInput.value = '';
+      updatePages();
+      return;
     }
 
-    // Restore the saved position after the server redirects back.
-    const savedPosition = sessionStorage.getItem(scrollStorageKey);
-
-    if (savedPosition !== null) {
-        sessionStorage.removeItem(scrollStorageKey);
-
-        try {
-            const position = JSON.parse(savedPosition);
-
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    window.scrollTo({
-                        left: position.x || 0,
-                        top: position.y || 0,
-                        behavior: "auto"
-                    });
-                });
-            });
-        } catch (error) {
-            console.error("Could not restore scroll position:", error);
-        }
+    if (file.size > maxBytes) {
+      showStatus('The selected file exceeds the 50 MB limit.');
+      fileInput.value = '';
+      updatePages();
+      return;
     }
 
-    // -------------------- Resource Upload --------------------
-
-    const uploadForm = document.querySelector(
-        'form[action="/upload"], form[action="/upload_resource"]'
+    showStatus(
+      `${file.name} selected (${(file.size / (1024 * 1024)).toFixed(2)} MB).`
     );
+  });
 
-    const allowedExtensions = new Set([
-        ".pdf",
-        ".txt",
-        ".md",
-        ".csv",
-        ".json",
-        ".jsonl"
-    ]);
+  updatePages();
 
-    const maxFileSize = 50 * 1024 * 1024; // 50 MB
+  form?.addEventListener('submit', event => {
+    const file = fileInput?.files?.[0];
 
-    if (uploadForm) {
-        const fileInput = uploadForm.querySelector(
-            '[name="pdf"], [name="resource_file"]'
-        );
-
-        const authorSelect = uploadForm.querySelector(
-            '[name="author_id"]'
-        );
-
-        const authorInput = uploadForm.querySelector(
-            '[name="author_name"]'
-        );
-
-        const subjectSelect = uploadForm.querySelector(
-            '[name="subject_id"]'
-        );
-
-        const subjectInput = uploadForm.querySelector(
-            '[name="subject_name"]'
-        );
-
-        const sourceSelect = uploadForm.querySelector(
-            '[name="source_id"]'
-        );
-
-        const sourceName = uploadForm.querySelector(
-            '[name="source_name"]'
-        );
-
-        const sourceUrl = uploadForm.querySelector(
-            '[name="source_url"]'
-        );
-
-        // Clear manual fields when an existing option is selected.
-        function clearIfSelected(select, inputs) {
-            if (!select) return;
-
-            select.addEventListener("change", () => {
-                if (select.value) {
-                    inputs.forEach(input => {
-                        if (input) input.value = "";
-                    });
-                }
-            });
-        }
-
-        clearIfSelected(authorSelect, [authorInput]);
-        clearIfSelected(subjectSelect, [subjectInput]);
-        clearIfSelected(sourceSelect, [sourceName, sourceUrl]);
-
-        function isValidUrl(value) {
-            try {
-                const url = new URL(value);
-
-                return (
-                    url.protocol === "http:" ||
-                    url.protocol === "https:"
-                );
-            } catch {
-                return false;
-            }
-        }
-
-        uploadForm.addEventListener("submit", event => {
-            // Validate the selected resource file.
-            const file = fileInput?.files?.[0];
-
-            if (!file) {
-                event.preventDefault();
-                alert("Please select a resource file.");
-                return;
-            }
-
-            const extension = file.name
-                .slice(file.name.lastIndexOf("."))
-                .toLowerCase();
-
-            if (!allowedExtensions.has(extension)) {
-                event.preventDefault();
-                alert(
-                    "Unsupported file type. Allowed formats: " +
-                    "PDF, TXT, MD, CSV, JSON and JSONL."
-                );
-                return;
-            }
-
-            if (file.size > maxFileSize) {
-                event.preventDefault();
-                alert("The maximum upload size is 50 MB.");
-                return;
-            }
-
-            if (file.size === 0) {
-                event.preventDefault();
-                alert("The selected file is empty.");
-                return;
-            }
-
-            // Author and subject are optional.
-            if (authorInput && authorSelect) {
-                if (
-                    authorSelect.value &&
-                    authorInput.value.trim()
-                ) {
-                    authorInput.value = "";
-                }
-            }
-
-            if (subjectInput && subjectSelect) {
-                if (
-                    subjectSelect.value &&
-                    subjectInput.value.trim()
-                ) {
-                    subjectInput.value = "";
-                }
-            }
-
-            // Source metadata is optional, but if one field is
-            // supplied, require the other field as well.
-            if (sourceSelect?.value) {
-                if (sourceName) sourceName.value = "";
-                if (sourceUrl) sourceUrl.value = "";
-            } else {
-                const name = sourceName?.value.trim() || "";
-                const url = sourceUrl?.value.trim() || "";
-
-                if ((name && !url) || (!name && url)) {
-                    event.preventDefault();
-                    alert(
-                        "Enter both the source name and URL, " +
-                        "or leave both empty."
-                    );
-                    return;
-                }
-
-                if (url && !isValidUrl(url)) {
-                    event.preventDefault();
-                    alert(
-                        "Enter a valid source URL beginning " +
-                        "with http:// or https://."
-                    );
-                    return;
-                }
-            }
-
-            // Save the scroll position only after all validation passes.
-            saveScrollPosition();
-
-            const submitButton = uploadForm.querySelector(
-                'button[type="submit"], button:not([type])'
-            );
-
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.textContent = "Uploading...";
-            }
-        });
+    if (
+      !file ||
+      !allowed.has(extensionOf(file.name)) ||
+      file.size > maxBytes
+    ) {
+      event.preventDefault();
+      showStatus('Choose a supported file smaller than 50 MB.');
+      return;
     }
 
-    // -------------------- Resource Search --------------------
-
-    const searchForm = document.querySelector(
-        'form[action="/search"]'
-    );
-
-    if (searchForm) {
-        // Handles clicking Search and pressing Enter.
-        searchForm.addEventListener("submit", () => {
-            saveScrollPosition();
-        });
+    if (
+      pagesInput &&
+      !pagesInput.disabled &&
+      pagesInput.value &&
+      (
+        !Number.isInteger(Number(pagesInput.value)) ||
+        Number(pagesInput.value) < 1
+      )
+    ) {
+      event.preventDefault();
+      showStatus('Enter a positive whole number of pages.');
+      pagesInput.focus();
+      return;
     }
 
-    // Do not call resultsSection.scrollIntoView() here.
-    // That would override the position restored after navigation.
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Uploading…';
+    }
+
+    showStatus('Uploading resource. Please keep this page open.');
+  });
+
+  // Keep existing metadata selections and free-text alternatives distinct.
+  for (const [selectSelector, textSelector] of [
+    ['#author_id', '#author_name'],
+    ['#subject_id', '#subject_name'],
+    ['#source_id', '#source_name']
+  ]) {
+    const select = document.querySelector(selectSelector);
+    const text = document.querySelector(textSelector);
+
+    if (!select || !text) continue;
+
+    select.addEventListener('change', () => {
+      if (select.value) text.value = '';
+    });
+
+    text.addEventListener('input', () => {
+      if (text.value.trim()) select.value = '';
+    });
+  }
 });

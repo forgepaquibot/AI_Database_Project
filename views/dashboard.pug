@@ -1,0 +1,108 @@
+extends layout.pug
+
+block styles
+  link(rel='stylesheet' href='/dashboard_style.css')
+
+block content
+  header.page-heading
+    p.eyebrow WORKSPACE OVERVIEW
+    h1 Welcome back, #{currentUser.username}
+    p.lead Your library, models, and conversations in one place.
+
+  section.stats-grid(aria-label='Workspace summary')
+    article.stat-card
+      span.stat-label Accessible resources
+      strong.stat-number= resourceCounts.total || 0
+      span.stat-foot Including public resources
+    article.stat-card
+      span.stat-label Accessible models
+      strong.stat-number= modelCounts.total || 0
+      span.stat-foot Registered in this hub
+    article.stat-card
+      span.stat-label Conversations
+      strong.stat-number= chatCounts.total || 0
+      span.stat-foot Saved to your account
+
+  section.dashboard-actions
+    a.action-card(href='/resources')
+      span.action-icon R
+      span
+        strong Manage resources
+        small Upload, search, and share information
+      span.action-arrow →
+    a.action-card(href='/ai_model')
+      span.action-icon M
+      span
+        strong Manage models
+        small Register models and index resources
+      span.action-arrow →
+    a.action-card(href='/chat')
+      span.action-icon C
+      span
+        strong Start a conversation
+        small Chat with a model you can access
+      span.action-arrow →
+
+  .dashboard-columns
+    section.panel
+      .panel-heading
+        div
+          p.eyebrow YOUR LIBRARY
+          h2 Recent resources
+        a.text-link(href='/resources') View all
+      if recentResources.length
+        .compact-list
+          each item in recentResources
+            a.compact-item(href='/resources')
+              span.file-chip= (item.resource_type || 'FILE').toUpperCase()
+              span.compact-main
+                strong= item.title
+                small #{item.owner_username || 'Unknown owner'} · #{item.processing_status || 'uploaded'}
+              span.status-dot(class='status-' + (item.processing_status || 'uploaded'))
+      else
+        p.empty-copy No resources yet. Upload a resource to start building your library.
+        a.button.secondary(href='/resources') Upload a resource
+
+    section.panel
+      .panel-heading
+        div
+          p.eyebrow CHAT HISTORY
+          h2 Recent conversations
+        a.text-link(href='/chat') Open chat
+      if recentChats.length
+        .compact-list
+          each item in recentChats
+            a.compact-item(href='/chat')
+              span.file-chip CHAT
+              span.compact-main
+                strong= item.title || 'Untitled conversation'
+                small #{item.model_name} · #{item.updated_at || ''}
+              span.action-arrow →
+      else
+        p.empty-copy Your recent chats will appear here after your first message.
+        a.button.secondary(href='/chat') Start chatting
+
+  section.panel
+    .panel-heading
+      div
+        p.eyebrow PROCESSING
+        h2 Recent indexing jobs
+    if recentJobs.length
+      .table-wrap
+        table
+          thead
+            tr
+              th Resource
+              th Operation
+              th Status
+              th Progress
+          tbody
+            each job in recentJobs
+              tr
+                td= job.resource_title
+                td= job.operation
+                td
+                  span.status(class='status-' + job.status)= job.status
+                td= (job.progress_percent || 0) + '%'
+    else
+      p.empty-copy No resource-indexing jobs have been submitted.
