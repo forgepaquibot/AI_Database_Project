@@ -39,6 +39,7 @@ router.get('/signup', (req, res, next) => {
   }
 
   return res.oidc.login({
+    returnTo: '/dashboard',
     authorizationParams: {
       screen_hint: 'signup'
     }

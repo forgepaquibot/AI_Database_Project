@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sourcesNode = document.querySelector('#sources-text');
   const welcomePanel = document.querySelector('#welcome-panel');
   const welcomeText = document.querySelector('#welcome-text');
-  const sendButton = document.querySelector('#send-message');
+  const sendButton = document.querySelector('#send-message');;
 
   function showWelcome() {
     const option = modelSelect?.selectedOptions?.[0];
@@ -75,9 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sendButton) {
       sendButton.disabled = true;
       sendButton.textContent = 'Generating…';
+      sendButton.setAttribute('aria-busy', 'true');
     }
 
-    if (status) status.textContent = 'Generating response…';
+    if (status) { 
+      status.textContent = 'Generating response…';
+      status.classList.add('is-generating');
+    }
+
     if (responseBox) responseBox.hidden = true;
 
     try {
@@ -126,13 +131,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (prompt) prompt.value = '';
-      if (status) status.textContent = 'Response complete.';
+      if (status) { 
+        status.textContent = 'Response complete.';
+        status.classList.remove('is-generating');
+      }
     } catch (error) {
       if (status) status.textContent = error.message;
     } finally {
       if (sendButton) {
         sendButton.disabled = false;
         sendButton.textContent = 'Send message';
+        sendButton.setAttribute('aria-busy', 'false');
       }
     }
   });

@@ -9,8 +9,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const maxBytes = 50 * 1024 * 1024;
   const allowed = new Set([
-    '.pdf', '.txt', '.md', '.csv', '.json', '.jsonl'
+    '.pdf', '.txt', '.md', '.csv', '.json', '.jsonl', '.docx'
   ]);
+
+  // Search form feedback and scroll-position restoration.
+  const searchForm = document.querySelector('#resource-search-form');
+  const searchButton = document.querySelector('#search-submit-button');
+  const searchStatus = document.querySelector('#search-status');
+
+  const searchScrollKey = 'ai-model-hub-resource-search-scroll-y';
+
+  // Restore the user's previous position after the /search page loads.
+  if (window.location.pathname === '/search') {
+    const savedScrollY = sessionStorage.getItem(searchScrollKey);
+
+    if (savedScrollY !== null) {
+      sessionStorage.removeItem(searchScrollKey);
+
+      requestAnimationFrame(() => {
+        window.scrollTo(0, Number(savedScrollY) || 0);
+      });
+    }
+  }
+
+  // Show immediate feedback when a search is submitted.
+  searchForm?.addEventListener('submit', () => {
+    try {
+      sessionStorage.setItem(searchScrollKey, String(window.scrollY));
+    } catch (err) {
+      console.warn('Could not save search scroll position:', err);
+    }
+
+    if (searchButton) {
+      searchButton.disabled = true;
+      searchButton.textContent = 'Searching…';
+      searchButton.setAttribute('aria-busy', 'true');
+    }
+
+    if (searchStatus) {
+      searchStatus.textContent = 'Searching resources…';
+      searchStatus.classList.add('is-searching');
+    }
+  });
 
   function extensionOf(name) {
     const dot = name.lastIndexOf('.');
@@ -48,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!allowed.has(extensionOf(file.name))) {
       showStatus(
-        'Unsupported format. Choose PDF, TXT, MD, CSV, JSON, or JSONL.'
+        'Unsupported format. Choose PDF, TXT, MD, CSV, DOCX, JSON, or JSONL.'
       );
       fileInput.value = '';
       updatePages();

@@ -60,7 +60,7 @@ router.get('/resources', requireUser, async (req, res, next) => {
 async function handleResourceUpload(req, res) {
   if (!req.file) {
     req.session.message =
-      'Choose a supported resource file (.pdf, .txt, .md, .csv, .json or .jsonl).';
+      'Choose a supported resource file (.pdf, .txt, .md, .csv, .json or .jsonl or .docx).';
 
     return res.redirect('/resources');
   }

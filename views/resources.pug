@@ -17,7 +17,7 @@ block content
       div
         p.eyebrow RESOURCE MANAGEMENT
         h2 Upload a resource
-        p.muted Supported formats: PDF, TXT, Markdown, CSV, JSON, and JSONL. Maximum 50 MB.
+        p.muted Supported formats: PDF, TXT, Markdown, CSV, DOCX, JSON, and JSONL. Maximum 50 MB.
     form#resource-upload-form(action='/upload_resource' method='post' enctype='multipart/form-data')
       .form-grid
         label.field.full-width(for='resource-title')
@@ -28,8 +28,8 @@ block content
           textarea#resource-description(name='description' rows='3' maxlength='5000' placeholder='Describe what this resource contains.')
         label.field.full-width(for='resource-file')
           span Select resource file
-          input#resource-file(type='file' name='resource_file' accept='.pdf,.txt,.md,.csv,.json,.jsonl' required)
-          small#file-help.form-help PDF, TXT, MD, CSV, JSON, or JSONL · up to 50 MB
+          input#resource-file(type='file' name='resource_file' accept='.pdf,.txt,.md,.csv,.docx,.json,.jsonl' required)
+          small#file-help.form-help PDF, TXT, MD, CSV, DOCX, JSON, or JSONL · up to 50 MB
         label.field(for='resource-pages')
           span Number of pages (PDF only)
           input#resource-pages(type='number' name='pages' min='1' step='1' placeholder='Optional')
@@ -85,7 +85,7 @@ block content
         p.eyebrow DISCOVER
         h2 Search resources
         p.muted Search resources you own and resources other users have made public.
-    form.search-form(action='/search' method='get')
+    form#resource-search-form.search-form(action='/search' method='get')
       .form-grid
         label.field.full-width(for='resource-query')
           span Search by title
@@ -103,8 +103,14 @@ block content
             each subject in subjects || []
               option(value=subject.subject_id selected=(String(selectedSubject || '') === String(subject.subject_id)))= subject.subject_name
       .form-actions
-        button(type='submit') Search resources
+        button#search-submit-button(type='submit') Search resources
         a.button.secondary(href='/resources') Clear filters
+
+      p#search-status.form-status(
+        role='status'
+        aria-live='polite'
+        aria-atomic='true'
+      )
 
   if results
     section.results-section

@@ -45,6 +45,14 @@ const auth0Config = isConfigured
       clientID,
       clientSecret,
       secret,
+
+      // Session expiration
+      session: {
+        rolling: true,
+        rollingDuration: 30 * 60,       // 30 minutes idle
+        absoluteDuration: 8 * 60 * 60  // 8 hours maximum
+      },
+
       authorizationParams: {
         response_type: 'code',
         scope: 'openid profile email'

@@ -54,7 +54,11 @@ block content
 
           .form-actions
             button#send-message(type='submit') Send message
-            p#chat-status.form-status(role='status' aria-live='polite')
+            p#chat-status.form-status(
+              role='status' 
+              aria-live='polite'
+              aria-atomic='true'
+            )
       else
         .empty-state
           h2 No chat models available

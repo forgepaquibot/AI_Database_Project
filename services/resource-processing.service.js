@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
+const mammoth = require('mammoth');
 const { PDFParse } = require('pdf-parse');
 const { parse: parseCsv } = require('csv-parse/sync');
 
@@ -23,7 +24,8 @@ const allowedExtensions = new Set([
   '.md',
   '.csv',
   '.json',
-  '.jsonl'
+  '.jsonl',
+  '.docx'
 ]);
 
 const uploadResource = multer({
@@ -53,6 +55,7 @@ function resourceTypeFromFilename(filename) {
 
   if (extension === '.pdf') return 'pdf';
   if (extension === '.txt' || extension === '.md') return 'txt';
+  if (extension === '.docx') return 'docx';
   if (extension === '.csv') return 'csv';
   if (extension === '.jsonl') return 'jsonl';
   if (extension === '.json') return 'json';
@@ -125,6 +128,16 @@ async function getResourceText(resource) {
     } finally {
       await parser.destroy();
     }
+  }
+
+  if (resource.resource_type === 'docx') {
+    const result = await mammoth.extractRawText({
+      path: filePath
+    });
+
+    return String(result.value || '')
+      .replace(/\u0000/g, '')
+      .trim();
   }
 
   if (resource.resource_type === 'txt') {
@@ -208,7 +221,8 @@ async function createResourceItems(resource) {
 
   if (
     resource.resource_type === 'pdf' ||
-    resource.resource_type === 'txt'
+    resource.resource_type === 'txt' ||
+    resource.resource_type === 'docx'
   ) {
     const text = await getResourceText(resource);
     const chunks = splitTextIntoChunks(text);

@@ -28,6 +28,7 @@ const resourceRoutes = require('./routes/resources.routes');
 const modelRoutes = require('./routes/models.routes');
 const chatRoutes = require('./routes/chat.routes');
 const profileRoutes = require('./routes/profile.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 const {
   createTrainingApiRouter,
@@ -40,8 +41,8 @@ const app = express();
 
 // Warn if the application is not fully configured.
 if (!SESSION_SECRET) {
-  console.warn(
-    'WARNING: Set SESSION_SECRET or AUTH0_SECRET in .env before deployment.'
+  throw new Error(
+    'SESSION_SECRET is required. Set it in your .env file.'
   );
 }
 
@@ -78,14 +79,15 @@ app.use(express.static(path.join(PROJECT_ROOT, 'styles')));
 // Express sessions store flash messages and the local SQLite user ID.
 app.use(require('express-session')({
   name: 'ai_model_hub.sid',
-  secret: SESSION_SECRET || 'development-only-change-this-session-secret',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Renew cookie with every user response
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 8 * 60 * 60 * 1000
+    maxAge: 30 * 60 * 1000
   }
 }));
 
@@ -101,12 +103,21 @@ if (auth0Configured) {
   });
 }
 
+app.use((req, res, next) => {
+  res.locals.currentUser = req.session?.user || null;
+  res.locals.currentPath = req.path;
+  res.locals.auth0Configured = auth0Configured;
+
+  next();
+});
+
 // Mount the application's feature routes.
 app.use('/', accountRoutes);
 app.use('/', resourceRoutes);
 app.use('/', modelRoutes);
 app.use('/', chatRoutes);
 app.use('/', profileRoutes);
+app.use('/', dashboardRoutes);
 
 app.use('/api/training', createTrainingApiRouter());
 app.use('/training', createTrainingPageRouter());
