@@ -13,10 +13,12 @@ __pycache__/
 npm-debug.log*
 
 uploads/**
-!uploads/.gitkeep
+!uploads/**/
+!uploads/**/.gitkeep
 
 storage/**
-!storage/.gitkeep
+!storage/**/
+!storage/**/.gitkeep
 
 db/*.sqlite
 db/*.sqlite-journal
